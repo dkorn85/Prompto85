@@ -52,3 +52,14 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 ## 12. Sicherheits-Leitplanke (inhaltlich)
 - **Keine echten, benannten Personen in Gewalt-/Kampf-Szenarien.** (Fight gegen erfundene/mythologische Wesen = ok.)
 - Kinder-Content: visuell ansprechend & entwicklungsgerecht, **nicht** trance-/suchterzeugend. Ruhiges Tempo, keine Cliffhanger-Mechanik.
+
+## 13. Text/Zahlen im Sheet werden mitanimiert
+- **Problem:** Seedance (und jedes Video-Modell) animiert sichtbaren Text/Zahlen im Storyboard-Sheet als bewegte Bildelemente mit — Panel-Nummern, Captions und In-World-Schilder („Block C“, „AREA SEALED“, „1927“) tauchen im Clip auf und flackern/verformen.
+- **Ursache:** das Modell behandelt jede lesbare Glyphe als Bildinhalt, nicht als Metadaten.
+- **Lösung:** **NULL Text / Zahlen / Captions / UI / Wasserzeichen in den Panels.** Panel-Reihenfolge lebt nur in der Shot-Liste, nicht im Bild. Jede In-World-Beschriftung (Schilder, Notizen, Poster, Spind-Nummern) abgewandt, unscharf oder leer halten — keine lesbaren Buchstaben/Ziffern.
+- **Verschärft bei GPT Image 2:** ~99–100 % Textgenauigkeit heißt, es schreibt Schilder *zuverlässig* hin, wenn man es nicht hart unterbindet. No-Text-Regel im Prompt explizit und prominent setzen.
+
+## 14. Storyboard-Motor ist look-abhängig — nicht dogmatisch Nano
+- **Problem:** Doku-Annahme „Nano Banana Pro = Storyboard-König“ stimmt nicht universell.
+- **Befund (direkter A/B, Aurora-Glass-Look):** GPT Image 2 lieferte den kinoreifen Glas-/Refraktions-Look mit gebauter Architektur, nassen Reflexionen und sauberem „eerie-but-gentle“-Ton klar überlegen; Nano Banana Pro kippte ins weiche, milchig-flache Kinderbuch und verschenkte die Refraktion.
+- **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B), nicht per Default festlegen. Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet → **GPT Image 2**; flach-illustrativ mit vielen konsistenten Figuren → **Nano Banana Pro**.
