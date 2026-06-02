@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prompto85 · Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--sub:#6e6e73;--line:#d2d2d7;--line2:#e8e8ed;--blue:#0071e3;--soft:#f0f0f3;--mono:'JetBrains Mono',ui-monospace,monospace;--body:'Manrope',-apple-system,system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1200px;margin:0 auto;padding:22px 18px 80px}
+header{display:flex;align-items:center;gap:13px;margin-bottom:22px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,#1d1d1f,#3a3a3e);display:flex;align-items:center;justify-content:center}
+header h1{font-size:21px;font-weight:800;letter-spacing:-.03em;margin:0}
+header h1 b{color:var(--blue);font-weight:800}
+header .sub{font-size:12px;color:var(--sub);margin-top:1px}
+.lang{margin-left:auto;display:flex;background:var(--soft);border-radius:9px;padding:3px}
+.lang button{border:none;background:transparent;color:var(--sub);font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:500}
+.lang button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.side{position:sticky;top:18px;display:flex;flex-direction:column;gap:16px}
+@media(max-width:900px){.side{position:static}}
+h2{font-size:13px;font-weight:700;letter-spacing:-.01em;margin:0 0 13px;color:var(--ink)}
+.tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--sub);display:block;margin-bottom:6px}
+label.fld{display:block;margin-bottom:14px}
+textarea,input[type=text],select{width:100%;background:#fff;border:1px solid var(--line);border-radius:11px;color:var(--ink);font-family:var(--body);font-size:14px;padding:10px 12px;outline:none}
+textarea:focus,input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+textarea{resize:vertical;min-height:74px}
+select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%236e6e73' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-size:12.5px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:#fff;cursor:pointer;font-family:var(--body);font-weight:500}
+.chip.on{border-color:var(--blue);color:var(--blue);background:rgba(0,113,227,.07)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:12px;background:var(--blue);color:#fff;font-weight:700;font-size:14px;padding:12px;cursor:pointer;font-family:var(--body)}
+.btn:hover{background:#0077ed}.btn:disabled{opacity:.45;cursor:default}
+.btn.sec{background:var(--soft);color:var(--ink)}.btn.sec:hover{background:#e8e8ed}
+.btn.dark{background:#1d1d1f}.btn.dark:hover{background:#000}
+.nav{display:flex;gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin-bottom:18px;overflow:auto}
+.nav button{flex:1;white-space:nowrap;border:none;background:transparent;color:var(--sub);font-weight:600;font-size:13px;padding:9px 12px;border-radius:9px;cursor:pointer;font-family:var(--body)}
+.nav button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:20px;text-align:center;color:var(--sub);cursor:pointer;font-size:13px;background:#fafafa}
+.drop.hot{border-color:var(--blue);color:var(--blue);background:rgba(0,113,227,.05)}
+.prev{max-width:100%;border-radius:12px;margin-top:12px;border:1px solid var(--line2)}
+pre.out{margin:12px 0 0;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#1d1d1f;white-space:pre-wrap;word-break:break-word;background:var(--soft);border-radius:12px;padding:13px;max-height:260px;overflow:auto}
+.note{background:#eef4ff;border-radius:12px;padding:12px 13px;font-size:13px;color:#1d1d1f;margin:12px 0}
+.expl{background:var(--soft);border-radius:12px;padding:13px;font-size:13.5px;color:#1d1d1f;white-space:pre-wrap;margin-bottom:14px}
+.clip{border:1px solid var(--line2);border-radius:14px;padding:14px;margin-bottom:12px}
+.clip h3{font-size:14px;font-weight:700;margin:0}
+.clip .meta{font-family:var(--mono);font-size:10px;color:var(--sub);margin-top:3px}
+.clip pre{margin:9px 0 0;font-family:var(--mono);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;background:var(--soft);border-radius:10px;padding:10px;max-height:200px;overflow:auto}
+.frames{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.frames .f{width:72px}.frames img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line2);display:block}
+.frames .fl{font-family:var(--mono);font-size:8px;color:var(--sub);word-break:break-all;margin-top:2px;line-height:1.2}
+.dlbtn{background:#fff;border:1px solid var(--blue);color:var(--blue);border-radius:10px;font-size:12px;padding:7px 12px;cursor:pointer;font-family:var(--body);font-weight:600;margin-top:10px}
+.cp{background:transparent;border:none;color:var(--blue);font-weight:600;cursor:pointer;font-size:12px;font-family:var(--body)}
+.empty{border:1.5px dashed var(--line);border-radius:14px;padding:32px 18px;text-align:center;color:var(--sub);font-size:13.5px}
+.x-err{color:#d70015;font-family:var(--mono);font-size:11.5px;margin-top:10px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.crow{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);border-radius:12px;padding:9px;margin-bottom:8px}
+.crow img{width:56px;height:56px;object-fit:cover;border-radius:9px}
+.crow .dna{font-size:12px;color:var(--ink);line-height:1.35;max-height:54px;overflow:auto}
+.chat{display:flex;flex-direction:column;gap:10px;max-height:440px;overflow:auto;padding:4px}
+.msg{padding:10px 13px;border-radius:14px;font-size:13.5px;max-width:86%;white-space:pre-wrap;line-height:1.5}
+.msg.u{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:5px}
+.msg.a{align-self:flex-start;background:var(--soft);color:var(--ink);border-bottom-left-radius:5px}
+.chatbar{display:flex;gap:8px;margin-top:12px}
+.chatbar input{flex:1}
+.tnode{width:160px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.tnode.act{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,113,227,.15)}
+.tnode img{width:100%;height:60px;object-fit:cover;border-radius:7px;display:block;margin-bottom:5px}
+.tnode .tt{font-size:11px;line-height:1.3;color:var(--ink);max-height:44px;overflow:hidden}
+footer{margin-top:30px;text-align:center;font-family:var(--mono);font-size:10.5px;color:#a1a1a6}
+.small{font-size:11px;color:var(--sub);margin-top:8px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 100 100"><g fill="none" stroke="#fff" stroke-width="3" opacity=".95"><circle cx="50" cy="50" r="20"/><circle cx="50" cy="30" r="20"/><circle cx="50" cy="70" r="20"/><circle cx="67" cy="40" r="20"/><circle cx="33" cy="40" r="20"/><circle cx="67" cy="60" r="20"/><circle cx="33" cy="60" r="20"/></g></svg></div>
+    <div><h1>Prompto<b>85</b></h1><div class="sub" data-i="tagline">Cinematic Prompt Studio</div></div>
+    <div class="lang"><button id="de" class="on">DE</button><button id="en">EN</button></div>
+  </header>
+
+  <div id="healthbar" style="display:none;margin:0 0 14px;padding:11px 14px;border-radius:10px;background:#fdecec;border:1px solid #f3b4b4;color:#7a1f1f;font-size:13px;line-height:1.55"></div>
+
+  <div class="layout">
+    <!-- SETTINGS -->
+    <div class="side">
+      <div class="card">
+        <h2 data-i="projH">Projekt</h2>
+        <label class="fld"><span class="tag" data-i="storyT">Handlung</span><textarea id="story" placeholder="Was soll passieren?"></textarea></label>
+        <span class="tag" data-i="styleT">Stil</span>
+        <select id="style"></select>
+        <button id="styleGalleryBtn" class="chip" data-i="styleGallery" style="margin-top:7px;width:100%">🖼 Visuell wählen</button>
+        <label class="fld" style="margin-top:9px"><input type="text" id="styleCustom" placeholder="…eigener Token-Block"/></label>
+        <label class="fld"><span class="tag" data-i="dnaT">Charakter-DNA</span><textarea id="dna" placeholder="(automatisch aus Referenz)" style="min-height:54px"></textarea></label>
+        <span class="tag" data-i="modelsT">Modelle</span>
+        <div class="chips" id="models" style="margin-bottom:13px"></div>
+        <span class="tag" data-i="fmtT">Format</span>
+        <div class="chips" id="aspect" style="margin-bottom:13px"></div>
+        <div class="seg">
+          <label class="fld" style="flex:1;margin:0"><span class="tag" data-i="brandT">Markensprache</span><input type="text" id="brand" value="Deutsch"/></label>
+        </div>
+        <label class="fld" style="margin-top:13px"><span class="tag" data-i="engineT">Engine</span>
+          <select id="engine"><option value="claude-sonnet-4-6">Claude Sonnet 4.6</option><option value="claude-opus-4-8">Claude Opus 4.8</option></select></label>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div>
+      <div class="nav" id="nav">
+        <button data-m="tree" data-i="navTree">Story-Baum</button>
+        <button data-m="story" class="on" data-i="navStory">Storyboard</button>
+        <button data-m="char" data-i="navChar">Charaktere</button>
+        <button data-m="dir" data-i="navDir">Regie & Cut</button>
+        <button data-m="agent" data-i="navAgent">Agent</button>
+      </div>
+      <div id="main"></div>
+    </div>
+  </div>
+  <footer>Prompto85 · chazon.eu/prompto · api.php + ~/.env · Bildgenerierung optional via OPENAI_API_KEY</footer>
+</div>
+
+<script>
+const STYLES=[
+ ["Project DNA","Dirty Sacred (Chazon)","minimal dark sacred aesthetic, near-monochrome, single-source light in darkness, fine particulate haze, sacred geometry motifs, restrained palette, hyperreal precision"],
+ ["Project DNA","Precision Object","physical precision object under single-source light, SEM/CERN reference aesthetic, near-monochromatic, clean large-format, extreme surface detail, black void background, volumetric light"],
+ ["Anime","Records-of-Ragnarök-style","high-contrast anime, mythic god-versus-human duel energy, hyper-muscular dramatic character art, bold inked outlines, intense speed lines and impact bursts, divine aura glow, dramatic low angles"],
+ ["Anime","Shonen Action","cel-shaded shonen anime, dynamic action pose, motion-line speed streaks, vivid saturated palette, hard rim light, energy effects, bold black outlines"],
+ ["Anime","Painterly (Ghibli-tradition)","painterly anime, lush hand-painted watercolor backgrounds, soft natural light, gentle pastel-natural palette, warm humanist mood"],
+ ["Cinematic","Epic Blockbuster","65mm large-format, anamorphic horizontal flare, oval bokeh, teal-orange grade, low-angle, volumetric haze, deep focus, cinematic contrast"],
+ ["Cinematic","Neo-Noir Neon","low-key neon practicals, magenta and cyan, wet reflective streets, halation, desaturated mids, crushed blacks, shallow depth of field"],
+ ["Cinematic","70s New Hollywood","1970s film stock, warm faded Kodak palette, heavy grain, soft contrast, naturalistic available light, anamorphic"],
+ ["Cinematic","Film Noir","black-and-white film noir, hard low-key key light, venetian-blind shadows, deep blacks, smoke, dramatic chiaroscuro"],
+ ["Photography","Editorial Fashion","high-fashion editorial, sculpted studio strobe, glossy skin, bold color block backdrop, sharp 85mm, magazine polish"],
+ ["Photography","Golden-Hour Portrait","golden-hour portrait, soft backlight rim, warm amber glow, creamy bokeh, 85mm, gentle skin tones"],
+ ["Photography","Product Macro","macro product photography, single softbox key, glossy specular highlights, seamless gradient backdrop, razor-sharp detail"],
+ ["Illustration","Risograph","risograph print, 2-color duotone fluoro pink and blue, visible halftone grain, slight misregistration, flat shapes"],
+ ["Fine Art","Baroque Chiaroscuro","baroque oil painting, dramatic chiaroscuro, single divine light source, rich dark palette, sculpted flesh, deep shadow"],
+ ["3D/Digital","Y2K Chrome","Y2K aesthetic, liquid chrome blobs, iridescent holographic gradients, glossy plastic, lens-flare sparkle"],
+ ["Project DNA","Sacred Rainbow Ultimate","Merkaba geometry, prismatic rainbow refraction, sacred light bursts, epic anime power-up energy, radiant aura"],
+ ["Kids","2.5D Flat-Dimensional","Peppa-Pig-like flat but dimensional cartoon, soft rounded shapes, warm flat colors, gentle parallax, friendly, calm pacing"],
+ ["Kids","Watercolor Storybook","soft watercolor washes, paper texture, hand-lettered feel, children's-book warmth, gentle light"],
+ ["Kids","Pixar-Soft 3D","polished soft 3D animation, rounded appealing characters, warm bounce light, family-friendly, shallow depth"],
+ ["Anime","Anime Cel Classic","90s retro anime cel look, hand-painted backgrounds, film grain, muted nostalgic palette, bold outlines"],
+ ["Anime","Korean Webtoon","clean vertical-scroll webtoon style, soft cel shading, pastel rim light, emotive faces, crisp lineart"],
+ ["Illustration","Graphic-Novel Ink","high-contrast black-and-white ink, cross-hatching, noir graphic-novel panels, heavy shadow"],
+ ["Illustration","Paper-Cut","layered paper-cut shadow theatre, flat planes, soft depth shadows, tactile craft feel"],
+ ["Fine Art","Oil-Painting Romantic","thick impasto brushstrokes, golden romantic light, classical composition, rich warm palette"],
+ ["Fine Art","Charcoal Sketch","rough charcoal on textured paper, smudged shadows, expressive monochrome, raw gesture"],
+ ["Fine Art","Illuminated Manuscript / Tarot","gold-leaf detailing, ornate borders, medieval sacred iconography, symbolic, jewel tones"],
+ ["Cinematic","IMAX Handheld Realism","IMAX realism, handheld micro-movement, natural physics, photoreal skin, documentary immediacy, deep focus"],
+ ["Cinematic","Blue-Hour","cool twilight, soft ambient blue, gentle practical lights, calm melancholy, low contrast"],
+ ["Cinematic","Wong-Kar-wai Saturated","lush saturated color, step-printed motion blur, intimate framing, longing mood, neon practicals"],
+ ["Cinematic","Wes-Anderson Symmetry","perfectly symmetrical framing, pastel palette, flat staging, deadpan whimsy, centered composition"],
+ ["Cinematic","Documentary Handheld","observational handheld, natural available light, realistic grain, verite immediacy"],
+ ["Sci-Fi","Brutalist Sci-Fi","raw concrete megastructures, monochrome, oppressive scale, hard shadow, cold light"],
+ ["Sci-Fi","Cyberpunk Neon","dense neon megacity, holographic signage, rain, chrome reflections, high saturation, volumetric fog"],
+ ["Sci-Fi","Solarpunk","lush green-tech utopia, warm sunlight, organic architecture, optimistic, airy, plant-integrated"],
+ ["3D/Digital","Isometric Diorama","tiny isometric world, miniature diorama, soft studio light, tilt-shift, clean shapes"],
+ ["3D/Digital","Low-Poly Stylized","clean low-poly geometry, flat shading, playful minimal palette, soft ambient occlusion"],
+ ["Material","Claymation","handmade clay characters, fingerprint texture, stop-motion micro-jitter, warm practical light"],
+ ["Material","Felt / Wool Stop-motion","soft felted-wool puppets, cozy tactile texture, miniature set, warm key light"],
+];
+const MODELS=[["gpt","GPT Image 2","image"],["nano","Nano Banana Pro","image"],["seedance","Seedance 2.0","video"],["kling","Kling 3.0 / Omni","video"],["happy","HappyHorse 1.0","video"],["veo","Veo 3.1","video"],["omni","Gemini Omni","video"]];
+const NATIVE={seedance:1,kling:1,veo:1,omni:1,happy:1};
+const BESTAT={
+ de:{gpt:"Text/Titel im Bild, Branding, Thumbnails (~99% Textgenauigkeit)",nano:"Charaktersheets, Gesichtskonsistenz, Storyboards (bis 5 Figuren)",seedance:"referenzgesteuert (9 Bild+3 Video+3 Audio), Beat-Sync",kling:"gerichtete Multi-Shot-Sequenz, Übergänge (First/Last-Frame)",happy:"max. Einzelclip-Qualität, deutscher Lipsync",veo:"Kino-Photoreal, länger als 15s via Scene Extension",omni:"schnelles Iterieren, Moodboard→Video (10s)"},
+ en:{gpt:"text/titles in image, branding, thumbnails (~99% text accuracy)",nano:"character sheets, face consistency, storyboards (up to 5 chars)",seedance:"reference-driven (9 img+3 vid+3 audio), beat-sync",kling:"directed multi-shot sequence, transitions (first/last-frame)",happy:"top single-clip quality, German lip-sync",veo:"cinematic photoreal, >15s via Scene Extension",omni:"fast iteration, moodboard→video (10s)"}
+};
+const ASPECTS=["9:16","16:9","21:9","1:1"];
+const SIZES={"9:16":"2160x3840","16:9":"3840x2160","21:9":"3840x1632","1:1":"2048x2048"};
+const T={
+ de:{tagline:"Cinematic Prompt Studio",projH:"Projekt",storyT:"Handlung",styleT:"Stil",dnaT:"Charakter-DNA",modelsT:"Modelle",fmtT:"Format",brandT:"Markensprache",engineT:"Engine",navStory:"Storyboard",navChar:"Cast",navDir:"Regie & Cut",navAgent:"Agent",navTree:"Story-Baum",treeLoad:"Laden",openInDir:"→ in Regie",suggestBtn:"Nächste Beats vorschlagen",ownBranch:"Eigener Zweig",addBranch:"Zweig anlegen",saveOk:"gespeichert",styleGallery:"🖼 Visuell wählen",
+  sbGen:"✦ Storyboard-Prompt erzeugen",sbRender:"4K-Sheet generieren (GPT Image 2)",sbUpload:"…oder fertiges Sheet hochladen",thinking:"denkt nach…",rendering:"rendert 4K…",
+  charUpload:"Charakter-Referenz hochladen",charAnalyze:"analysiere…",sheetGen:"✦ Charactersheet-Prompt erstellen",useDna:"Als aktive DNA setzen",
+  plan:"✦ Regie-Plan vorschlagen",exportT:"Export",zClip:"Pro Clip",zWhole:"Ganze Sequenz",dlall:"⬇ Alle ZIPs",dl:"⬇ ZIP",copy:"kopieren",copied:"kopiert",send:"Senden",agentPlaceholder:"Frag den Regisseur…",
+  emptyDir:"Wähle Stil und Handlung, optional ein Storyboard, dann Regie-Plan vorschlagen.",backendHint:"Backend prüfen: api.php neben index.html und ~/.env mit Key?"},
+ en:{tagline:"Cinematic Prompt Studio",projH:"Project",storyT:"Story",styleT:"Style",dnaT:"Character DNA",modelsT:"Models",fmtT:"Format",brandT:"Brand language",engineT:"Engine",navStory:"Storyboard",navChar:"Cast",navDir:"Direct & Cut",navAgent:"Agent",navTree:"Story tree",treeLoad:"Load",openInDir:"→ to Director",suggestBtn:"Suggest next beats",ownBranch:"Own branch",addBranch:"Add branch",saveOk:"saved",styleGallery:"🖼 Pick visually",
+  sbGen:"✦ Generate storyboard prompt",sbRender:"Render 4K sheet (GPT Image 2)",sbUpload:"…or upload a finished sheet",thinking:"thinking…",rendering:"rendering 4K…",
+  charUpload:"Upload character reference",charAnalyze:"analyzing…",sheetGen:"✦ Create character-sheet prompt",useDna:"Set as active DNA",
+  plan:"✦ Propose director's plan",exportT:"Export",zClip:"Per clip",zWhole:"Whole sequence",dlall:"⬇ All ZIPs",dl:"⬇ ZIP",copy:"copy",copied:"copied",send:"Send",agentPlaceholder:"Ask the director…",
+  emptyDir:"Pick style and story, optionally a storyboard, then Propose director plan.",backendHint:"Check backend: api.php next to index.html and ~/.env with key?"}
+};
+let LANG="de",MODE="story";
+const $=id=>document.getElementById(id);
+const tr=k=>T[LANG][k]||k;
+const S={style:STYLES[0][2],custom:"",dna:"",brand:"Deutsch",models:{kling:true,seedance:true},aspect:"9:16",engine:"claude-sonnet-4-6",
+  sbImage:null,sbImgEl:null,sbGrid:null,sbResult:null,charRefs:[],sheetResult:null,plan:null,chat:[],sbZip:"clip",treeId:"default",tree:null,treeSel:null,cast:{actors:[],history:[],advice:null}};
+
+/* ---- init controls ---- */
+(function(){
+ const ss=$("style");[...new Set(STYLES.map(s=>s[0]))].forEach(g=>{const og=document.createElement("optgroup");og.label=g;STYLES.filter(s=>s[0]===g).forEach(s=>{const o=document.createElement("option");o.value=s[1];o.textContent=s[1];og.appendChild(o);});ss.appendChild(og);});
+ ss.onchange=()=>{S.style=STYLES.find(x=>x[1]===ss.value)[2];};
+ $("styleGalleryBtn").onclick=openStyleGallery;
+ $("styleCustom").oninput=e=>S.custom=e.target.value;
+ $("dna").oninput=e=>S.dna=e.target.value;
+ $("brand").oninput=e=>S.brand=e.target.value;
+ $("engine").onchange=e=>S.engine=e.target.value;
+ $("story").oninput=()=>{};
+ const mc=$("models");MODELS.forEach(m=>{const b=document.createElement("button");b.className="chip"+(S.models[m[0]]?" on":"");b.textContent=m[1];b.title=(BESTAT[LANG]&&BESTAT[LANG][m[0]])||"";b.onclick=()=>{S.models[m[0]]=!S.models[m[0]];b.classList.toggle("on");};mc.appendChild(b);});
+ const ac=$("aspect");ASPECTS.forEach(a=>{const b=document.createElement("button");b.className="chip"+(a===S.aspect?" on":"");b.textContent=a;b.onclick=()=>{S.aspect=a;[...ac.children].forEach(c=>c.classList.toggle("on",c.textContent===a));};ac.appendChild(b);});
+ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{MODE=b.dataset.m;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x===b));render();});
+ $("de").onclick=()=>{LANG="de";applyLang();render();};$("en").onclick=()=>{LANG="en";applyLang();render();};
+ applyLang();render();checkHealth();castLoad();
+})();
+function applyLang(){document.documentElement.lang=LANG;document.querySelectorAll("[data-i]").forEach(e=>{if(T[LANG][e.dataset.i])e.textContent=T[LANG][e.dataset.i];});$("de").classList.toggle("on",LANG==="de");$("en").classList.toggle("on",LANG==="en");$("story").placeholder=LANG==="de"?"Was soll passieren?":"What should happen?";}
+function styleTok(){return S.custom.trim()||S.style;}
+function story(){return $("story").value||"";}
+function styleSlug(n){return n.toLowerCase().replace(/ö/g,"o").replace(/&/g,"and").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");}
+function closeStyleGallery(){const o=$("styleOverlay");if(o)o.remove();}
+function openStyleGallery(){
+ closeStyleGallery();const de=LANG==="de";
+ const ov=document.createElement("div");ov.id="styleOverlay";
+ ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px";
+ const box=document.createElement("div");
+ box.style.cssText="background:#fff;max-width:1000px;width:100%;border-radius:14px;padding:18px 18px 26px;box-shadow:0 20px 60px rgba(0,0,0,.3)";
+ let h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:16px">'+(de?"Stil wählen":"Pick a style")+'</b><button id="styleOvX" style="border:none;background:#eee;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px">✕</button></div>';
+ h+='<div style="font-size:12px;color:#86868b;margin-bottom:6px">'+(de?"Gleiches Motiv je Kachel — nur der Stil ändert sich.":"Same subject per tile — only the style changes.")+'</div>';
+ [...new Set(STYLES.map(s=>s[0]))].forEach(g=>{
+  h+='<div style="font-size:12px;font-weight:700;color:#86868b;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.04em">'+g+'</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">';
+  STYLES.filter(s=>s[0]===g).forEach(s=>{
+   const sl=styleSlug(s[1]);const active=(S.style===s[2])?";outline:3px solid #0071e3;outline-offset:-1px":"";
+   h+='<div class="styleCard" data-token="'+encodeURIComponent(s[2])+'" data-name="'+encodeURIComponent(s[1])+'" style="cursor:pointer;border:1px solid #e5e5ea;border-radius:10px;overflow:hidden;background:#f5f5f7'+active+'">'
+     +'<div style="aspect-ratio:1/1;background:#e9e9ee;display:flex;align-items:center;justify-content:center">'
+     +'<img src="styles/'+sl+'.jpg" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=&quot;none&quot;"/>'
+     +'</div><div style="padding:6px 8px;font-size:12px;line-height:1.25">'+s[1]+'</div></div>';
+  });
+  h+='</div>';
+ });
+ box.innerHTML=h;ov.appendChild(box);document.body.appendChild(ov);
+ ov.onclick=e=>{if(e.target===ov)closeStyleGallery();};
+ box.querySelector("#styleOvX").onclick=closeStyleGallery;
+ box.querySelectorAll(".styleCard").forEach(c=>c.onclick=()=>{const tok=decodeURIComponent(c.dataset.token);const nm=decodeURIComponent(c.dataset.name);S.style=tok;const ss=$("style");if(ss)ss.value=nm;closeStyleGallery();});
+}
+
+/* ---- API ---- */
+async function api(body){const r=await fetch("./api.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();return {ok:r.ok,d};}
+async function checkHealth(){const bar=$("healthbar");if(!bar)return;try{const r=await fetch("./api.php?health=1",{method:"GET",cache:"no-store"});const t=await r.text();try{JSON.parse(t);bar.style.display="none";return;}catch(_){throw new Error("html");}}catch(e){bar.style.display="block";bar.innerHTML=(LANG==="de"?"⚠ <b>Backend nicht erreichbar.</b> <code>api.php</code> liefert kein JSON — meist fehlt die Datei auf dem Server (führt zum Fehler „Unexpected token &lt;\"). Prüfe: liegt <code>api.php</code> neben <code>index.html</code>? Test: <code>api.php?health=1</code> sollte <code>{&quot;ok&quot;:true}</code> zeigen.":"⚠ <b>Backend unreachable.</b> <code>api.php</code> did not return JSON — usually the file is missing on the server (causes the „Unexpected token &lt;\" error). Check that <code>api.php</code> sits next to <code>index.html</code>. Test: <code>api.php?health=1</code> should show <code>{&quot;ok&quot;:true}</code>.");}}
+async function claude(messages,system,max){const {ok,d}=await api({model:S.engine,max_tokens:max||3000,system,messages});if(d.error)throw new Error(d.error.message||d.error);if(!ok)throw new Error("HTTP");return (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");}
+function parseJSON(t){t=t.replace(/```json|```/g,"").trim();const a=t.indexOf("{"),b=t.lastIndexOf("}");if(a>=0)t=t.slice(a,b+1);return JSON.parse(t);}
+function imgBlock(dataUrl){const m=dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);return m?{type:"image",source:{type:"base64",media_type:m[1],data:m[2]}}:null;}
+function fitImage(dataUrl,maxEdge){return new Promise(function(res){var im=new Image();im.onload=function(){var w=im.width,h=im.height,s=Math.min(1,(maxEdge||1568)/Math.max(w,h));var cv=document.createElement("canvas");cv.width=Math.round(w*s);cv.height=Math.round(h*s);cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);res(cv.toDataURL("image/jpeg",0.85));};im.src=dataUrl;});}
+
+/* ---- render router ---- */
+function render(){const m=$("main");if(MODE==="tree"){m.innerHTML=viewTree();wireTree();if(!S.tree)treeLoad();}else if(MODE==="story")m.innerHTML=viewStory(),wireStory();else if(MODE==="char")m.innerHTML=viewChar(),wireChar();else if(MODE==="dir")m.innerHTML=viewDir(),wireDir();else m.innerHTML=viewAgent(),wireAgent();}
+
+/* ===== STORYBOARD ===== */
+function viewStory(){
+ let r="";
+ if(S.sbResult){r+='<div class="expl">'+esc(S.sbResult.notes_de||"")+'</div>';
+   r+='<div style="display:flex;justify-content:flex-end"><button class="cp" id="cpSb">'+tr("copy")+'</button></div>';
+   r+='<pre class="out" id="sbPrompt">'+esc(S.sbResult.prompt_en||"")+'</pre>';
+   r+='<div class="seg" style="margin-top:12px"><button class="btn dark" id="sbRender" style="flex:1">'+tr("sbRender")+'</button></div>';}
+ if(S.sbImage)r+='<img class="prev" src="'+S.sbImage+'"/>';
+ r+='<div style="margin-top:14px"><span class="tag">'+tr("sbUpload")+'</span><div class="drop" id="sbDrop">Sheet ablegen / tap</div><input type="file" id="sbFile" accept="image/*" hidden/></div>';
+ return '<div class="card"><h2>Storyboard</h2><div class="small">'+(LANG==="de"?"Die KI entscheidet die Framezahl und schreibt einen 4K-Sheet-Prompt für GPT Image 2 oder Nano Banana Pro. Mit OPENAI_API_KEY rendert sie direkt.":"The AI decides the frame count and writes a 4K sheet prompt for GPT Image 2 or Nano Banana Pro. With OPENAI_API_KEY it renders directly.")+'</div>'
+   +'<button class="btn" id="sbGen" style="margin-top:13px">'+tr("sbGen")+'</button><div id="sbErr" class="x-err"></div>'+r+'</div>';
+}
+function wireStory(){
+ $("sbGen").onclick=genStoryboard;
+ if($("cpSb"))$("cpSb").onclick=()=>cp($("sbPrompt").textContent,$("cpSb"));
+ if($("sbRender"))$("sbRender").onclick=renderSheet;
+ const z=$("sbDrop"),f=$("sbFile");if(z){z.onclick=()=>f.click();f.onchange=e=>loadSheet(e.target.files[0]);
+  ["dragover","dragenter"].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.add("hot");}));
+  ["dragleave","drop"].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.remove("hot");}));
+  z.addEventListener("drop",e=>{const x=[...e.dataTransfer.files].find(v=>v.type.startsWith("image/"));if(x)loadSheet(x);});}
+}
+const SYS_SB="You are PROMPTO85, an AI cinematographer-director. Given a STORYLINE, locked STYLE, CHARACTER DNA, target image model and aspect FORMAT, design ONE multi-panel STORYBOARD SHEET. Decide the number of panels yourself like a director (usually 4-9). Arrange them in a clean numbered grid with clear gutters on a neutral sheet background; small number caption per panel. Write ONE image prompt in ENGLISH that renders the whole sheet at 4K, consistent style + character DNA across all panels, aspect "+ "of each panel matching the target FORMAT. Return ONLY JSON: {\"panels\":N,\"grid\":{\"cols\":N,\"rows\":M},\"prompt_en\":\"...\",\"notes_de\":\"kurze deutsche Erklaerung der Shotfolge\"}";
+async function genStoryboard(){
+ const b=$("sbGen");b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("thinking");$("sbErr").textContent="";
+ try{const txt=await claude([{role:"user",content:"STORYLINE: "+story()+"\nSTYLE: "+styleTok()+"\nCHARACTER DNA: "+(S.dna||"—")+"\nFORMAT: "+S.aspect}],SYS_SB,2500);
+   S.sbResult=parseJSON(txt);if(S.sbResult.grid)S.sbGrid=S.sbResult.grid;render();}
+ catch(e){$("sbErr").textContent="⚠ "+e.message+" — "+tr("backendHint");b.disabled=false;b.textContent=tr("sbGen");}
+}
+async function renderSheet(){
+ const b=$("sbRender");b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("rendering");
+ try{const {d}=await api({action:"image",prompt:S.sbResult.prompt_en,size:SIZES[S.aspect]||"2160x3840"});
+   if(d.error==="no_image_key"){alert(d.message);b.disabled=false;b.textContent=tr("sbRender");return;}
+   if(d.error)throw new Error(d.error.message||d.error);
+   const b64=d.data&&d.data[0]&&d.data[0].b64_json;if(!b64)throw new Error("kein Bild");
+   S.sbImage="data:image/png;base64,"+b64;const im=new Image();im.onload=()=>{S.sbImgEl=im;};im.src=S.sbImage;render();}
+ catch(e){alert("Bildgenerierung: "+e.message);b.disabled=false;b.textContent=tr("sbRender");}
+}
+function loadSheet(file){if(!file)return;const r=new FileReader();r.onload=()=>{S.sbImage=r.result;const im=new Image();im.onload=()=>{S.sbImgEl=im;};im.src=r.result;render();};r.readAsDataURL(file);}
+
+/* ===== CHARACTERS ===== */
+function viewChar(){
+ const de=LANG==="de";const A=S.cast.actors;const act=A.filter(function(a){return a.selected;});
+ let r='<div class="card"><h2>Cast</h2>';
+ r+='<div class="small">'+(de?"Lade ein oder mehrere Charactersheets hoch — jede Figur wird automatisch erkannt und als Schauspieler gesammelt. „Besetzte\" Schauspieler kommen ins nächste Storyboard.":"Upload one or more character sheets — each actor is auto-detected and collected. \u201ECast\u201c actors go into the next storyboard.")+'</div>';
+ r+='<div class="drop" id="cDrop" style="margin-top:10px">'+(de?"Charactersheet(s) hochladen":"Upload character sheet(s)")+'</div><input type="file" id="cFile" accept="image/*" multiple hidden/><div id="cErr" class="x-err"></div>';
+ r+='<div style="margin-top:12px"><span class="tag">'+(de?"Aktive Besetzung":"Active cast")+' ('+act.length+')</span>';
+ if(act.length){r+='<div class="chips" style="gap:6px">';act.forEach(function(a){r+='<span class="chip on" style="display:inline-flex;align-items:center;gap:6px"><img src="'+a.thumb+'" style="width:20px;height:20px;border-radius:4px;object-fit:cover"/>'+esc(a.name||"?")+'</span>';});r+='</div>';}
+ else r+='<div class="small">'+(de?"keine ausgewählt — tippe unten auf „besetzen\".":"none selected — tap \u201Ecast\u201C below.")+'</div>';
+ r+='</div>';
+ r+='<button class="btn" id="castDir" style="margin-top:13px">'+(de?"🎬 Cast & Szene verknüpfen":"🎬 Link cast & scene")+'</button><div id="castErr" class="x-err"></div>';
+ r+='</div>';
+ if(S.cast.advice){const ad=S.cast.advice;r+='<div class="card" style="margin-top:16px"><h2>'+(de?"Casting-Regie":"Casting direction")+'</h2>';
+  if(ad.staging_de)r+='<div class="expl">'+esc(ad.staging_de)+'</div>';
+  if(ad.continuity_de)r+='<div class="small" style="margin-top:8px;line-height:1.6">'+esc(ad.continuity_de)+'</div>';
+  const tg=function(arr,lbl,col){if(!arr||!arr.length)return "";return '<div class="small" style="margin-top:6px"><b style="color:'+col+'">'+lbl+':</b> '+arr.map(esc).join(", ")+'</div>';};
+  r+=tg(ad.enter,de?"kommt":"enters","#1a7f37")+tg(ad.stay,de?"bleibt":"stays","#0071e3")+tg(ad.exit,de?"geht":"exits","#a11");
+  if(ad.cast_prompt_en){r+='<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button></div><pre>'+esc(ad.cast_prompt_en)+'</pre>';}
+  r+='</div>';}
+ r+='<div class="card" style="margin-top:16px"><h2>'+(de?"Alle Schauspieler":"All actors")+' ('+A.length+')</h2>';
+ if(!A.length)r+='<div class="empty">'+(de?"Noch keine Schauspieler.":"No actors yet.")+'</div>';
+ A.forEach(function(a,i){
+  const seen=S.cast.history.filter(function(h){return (h.present||[]).indexOf(a.name)>=0;}).length;
+  r+='<div class="crow" style="align-items:flex-start">';
+  r+='<img src="'+a.thumb+'"/>';
+  r+='<div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">';
+  r+='<input type="text" class="aName" data-i="'+i+'" value="'+esc(a.name||"")+'" placeholder="Name" style="font-weight:600"/>';
+  r+='<textarea class="aDna" data-i="'+i+'" style="min-height:46px">'+esc(a.dna||(de?"analysiere…":"analyzing…"))+'</textarea>';
+  r+='<div class="small">'+(de?"in Szenen: ":"in scenes: ")+seen+'</div>';
+  r+='</div>';
+  r+='<div style="display:flex;flex-direction:column;gap:6px">';
+  r+='<button class="chip'+(a.selected?" on":"")+'" data-sel="'+i+'">'+(a.selected?(de?"✓ besetzt":"✓ cast"):(de?"besetzen":"cast"))+'</button>';
+  r+='<button class="dlbtn" style="margin:0" data-del="'+i+'">'+(de?"löschen":"delete")+'</button>';
+  r+='</div></div>';
+ });
+ if(S.cast.history.length){r+='<details style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:600">'+(de?"Szenen-Log":"Scene log")+' ('+S.cast.history.length+')</summary><div class="small" style="margin-top:6px;line-height:1.6">';
+  S.cast.history.slice(-8).reverse().forEach(function(h){r+='<div>• '+esc(h.title||"")+' — '+((h.present||[]).map(esc).join(", ")||"—")+'</div>';});
+  r+='</div></details>';}
+ r+='</div>';
+ r+='<div class="card" style="margin-top:16px"><h2>Charactersheet</h2><div class="small">'+(de?"Erstellt einen 4K-Charactersheet-Prompt (Front/3-4/Profil/Ausdrücke) aus aktiver DNA + Stil.":"Creates a 4K character-sheet prompt from active DNA + style.")+'</div>';
+ r+='<button class="btn" id="sheetGen" style="margin-top:12px">'+tr("sheetGen")+'</button><div id="shErr" class="x-err"></div>';
+ if(S.sheetResult){r+='<div class="expl" style="margin-top:13px">'+esc(S.sheetResult.notes_de||"")+'</div><div style="display:flex;justify-content:flex-end"><button class="cp" id="cpSheet">'+tr("copy")+'</button></div><pre class="out" id="sheetPrompt">'+esc(S.sheetResult.prompt_en||"")+'</pre>';}
+ r+='</div>';
+ return r;
+}
+function wireChar(){
+ const z=$("cDrop"),f=$("cFile");
+ if(z){z.onclick=function(){f.click();};["dragover","dragenter"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.add("hot");});});["dragleave","drop"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.remove("hot");});});z.addEventListener("drop",function(e){addActors([...e.dataTransfer.files].filter(function(v){return v.type.startsWith("image/");}));});}
+ if(f)f.onchange=function(e){addActors([...e.target.files]);};
+ document.querySelectorAll(".aName").forEach(function(el){el.oninput=function(){S.cast.actors[+el.dataset.i].name=el.value;castSave();};});
+ document.querySelectorAll(".aDna").forEach(function(el){el.oninput=function(){S.cast.actors[+el.dataset.i].dna=el.value;castSave();};});
+ document.querySelectorAll("[data-sel]").forEach(function(b){b.onclick=function(){const a=S.cast.actors[+b.dataset.sel];a.selected=!a.selected;if(a.selected&&!S.dna)S.dna=a.dna||"";castSave();render();};});
+ document.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){const i=+b.dataset.del;const a=S.cast.actors[i];if(window.confirm((LANG==="de"?"Schauspieler löschen: ":"Delete actor: ")+(a.name||"?")+"?")){S.cast.actors.splice(i,1);castSave();render();}};});
+ const cd=$("castDir");if(cd)cd.onclick=castDirector;
+ if($("sheetGen"))$("sheetGen").onclick=genSheet;
+ if($("cpSheet"))$("cpSheet").onclick=function(){cp($("sheetPrompt").textContent,$("cpSheet"));};
+}
+const SYS_CHAR="Look at the character sheet image. Identify the character and read any visible name label. Describe ONLY the character (not the scene/background). Return ONLY JSON: {\"name\":\"<short character name if visible or clearly inferable, else empty>\",\"dna_en\":\"<concise reusable identity DNA in ENGLISH: hair, face, build, wardrobe, distinguishing features, palette>\",\"note_de\":\"kurze deutsche Notiz\"}";
+function activeActors(){return S.cast.actors.filter(function(a){return a.selected;});}
+function lastPresent(){var h=S.cast.history;return h.length?(h[h.length-1].present||[]):[];}
+function castTag(n){return "@"+(((n||"Char").trim().replace(/\s+/g,""))||"Char");}
+function castBlock(){var a=activeActors().filter(function(x){return x.dna&&x.dna.indexOf("\u26a0")<0;});if(!a.length)return "";return a.map(function(x){return castTag(x.name)+" \u2014 "+x.dna;}).join("\n");}
+var _castT=null;
+function castSave(){clearTimeout(_castT);_castT=setTimeout(function(){api({action:"tree_save",id:"cast_"+S.treeId,tree:S.cast}).catch(function(){});},800);}
+async function castLoad(){try{var res=await api({action:"tree_load",id:"cast_"+S.treeId});var d=res.d;if(d&&!d.empty&&Array.isArray(d.actors)){S.cast={actors:d.actors||[],history:d.history||[],advice:d.advice||null};}}catch(e){}if(MODE==="char")render();}
+function addActors(files){files.forEach(function(f){var r=new FileReader();r.onload=async function(){
+   var thumb=await fitImage(r.result,512);
+   var a={id:uid(),name:"",dna:"",thumb:thumb,role:"",selected:true};
+   S.cast.actors.push(a);render();castSave();
+   try{var big=await fitImage(r.result,1568);var ib=imgBlock(big);var txt=await claude([{role:"user",content:[ib,{type:"text",text:"Identify the character and name."}]}],SYS_CHAR,800);var j=parseJSON(txt);a.dna=j.dna_en||"";if(j.name)a.name=j.name;if(!S.dna)S.dna=a.dna;render();castSave();}
+   catch(e){a.dna="\u26a0 "+e.message;render();}};r.readAsDataURL(f);});}
+const SYS_CAST="You are PROMPTO85's casting & continuity director. Given an ACTIVE CAST (named characters with identity DNA), the locked STYLE/ENVIRONMENT, the STORYLINE and the PREVIOUS SCENE's present characters, plan the ENSEMBLE for the NEXT scene like a film director. Decide who carries over (stay), who newly ENTERS the scene and HOW (entrance), and who EXITS and how, relative to the previous scene. Weave the cast sensibly into the environment and the story beat. Keep each character's identity DNA byte-identical. Use @Name tags (no spaces) consistent with Seedance/Kling asset tagging. Return ONLY JSON: {\"staging_de\":\"<2-4 deutsche Saetze: wie die Figuren in der Szene angeordnet sind und interagieren>\",\"continuity_de\":\"<2-4 deutsche Saetze: wer bleibt, neu auftaucht oder abgeht gegenueber der letzten Szene und warum>\",\"enter\":[\"Name\"],\"stay\":[\"Name\"],\"exit\":[\"Name\"],\"cast_prompt_en\":\"<a ready ENGLISH prompt block weaving the @tagged characters into the environment, each DNA preserved, ready to paste into the Director step>\",\"present\":[\"Name\"]}";
+async function castDirector(){var b=$("castDir");if(!b)return;var act=activeActors();var ce=$("castErr");if(ce)ce.textContent="";if(!act.length){if(ce)ce.textContent=LANG==="de"?"W\u00e4hle mindestens einen Schauspieler (besetzen).":"Select at least one actor (cast).";return;}b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("thinking");
+ var prev=lastPresent();
+ var payload="STORYLINE: "+(story()||"\u2014")+"\nSTYLE: "+styleTok()+"\nENVIRONMENT/FORMAT: "+S.aspect+"\nBRAND LANGUAGE: "+S.brand+"\nACTIVE CAST:\n"+act.map(function(a){return "- "+castTag(a.name)+(a.role?" ("+a.role+")":"")+": "+(a.dna||"");}).join("\n")+"\nPREVIOUS SCENE PRESENT: "+(prev.length?prev.join(", "):"(none \u2014 first scene)");
+ try{var txt=await claude([{role:"user",content:payload}],SYS_CAST,1800);S.cast.advice=parseJSON(txt);castSave();render();}
+ catch(e){if($("castErr"))$("castErr").textContent="\u26a0 "+e.message+" \u2014 "+tr("backendHint");b.disabled=false;b.textContent="\ud83c\udfac";}
+}
+function recordScene(title,present){var p=(present&&present.length)?present:activeActors().map(function(a){return a.name||castTag(a.name);});S.cast.history.push({ts:Date.now(),title:title||("Szene "+(S.cast.history.length+1)),present:p});if(S.cast.history.length>40)S.cast.history=S.cast.history.slice(-40);castSave();}
+const SYS_SHEET="You are PROMPTO85. Write ONE image prompt in ENGLISH for a CHARACTER REFERENCE SHEET at 4K for the chosen image model: a single sheet with front, 3/4, profile and back views plus a row of facial expressions, neutral or greenscreen background, consistent identity. Use the locked CHARACTER DNA + STYLE. Return ONLY JSON: {\"prompt_en\":\"...\",\"notes_de\":\"kurze deutsche Notiz\"}";
+async function genSheet(){const b=$("sheetGen");b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("thinking");$("shErr").textContent="";
+ try{const txt=await claude([{role:"user",content:"CHARACTER DNA: "+(S.dna||"[keine — erfinde eine plausible aus dem Stil]")+"\nSTYLE: "+styleTok()+"\nFORMAT: "+S.aspect}],SYS_SHEET,1500);S.sheetResult=parseJSON(txt);render();}
+ catch(e){$("shErr").textContent="⚠ "+e.message+" — "+tr("backendHint");b.disabled=false;b.textContent=tr("sheetGen");}
+}
+
+/* ===== DIRECTOR / CUT ===== */
+const SYS_PLAN="You are PROMPTO85, an AI cinematographer-director. Plan shots like a real director. Inputs: STORYLINE, locked STYLE, CHARACTER DNA, target MODELS, aspect FORMAT, BRAND LANGUAGE, optional storyboard image (a multi-panel sheet). Some video models are STORYBOARD-NATIVE (seedance, kling, veo, omni, happy): they accept a whole storyboard sheet as reference and animate the sequence \u2014 DO NOT cut these into frames. Image/frame models (gpt, nano) or explicit first/last-frame needs are FRAME-BASED. DO: 1) Break the story into CLIPS; decide count and per-clip coverage. For each clip set model, and cut:\"none\" for storyboard-native (with uses_full_sheet:true and empty frames[]) OR cut:\"frames\" for frame-based (with frames[] using cell 0-based row-major, or crop{x,y,w,h} 0..1). 2) If a sheet image is given, detect its grid and set top-level grid{cols,rows}. 3) Write prompt_en in ENGLISH per clip's model: storyboard-native = reference the WHOLE sheet with the model's asset syntax (Seedance @asset/@sheet, Subject->Action->Camera->Style, one move per shot; Kling numbered time-coded shot list <=6 shots <=15s referencing the panels in order; veo/omni/happy one beat + one move, ambient audio only), reading panels in order as the shot sequence; frame-based = production brief or first/last-frame description. Always reuse STYLE + CHARACTER DNA byte-identical; ambient audio only (voice + hard SFX go to ElevenLabs). 4) ALSO return a top-level sequence object with per_model: ONE entry PER selected storyboard-native model = a SINGLE prompt_en that drives the ENTIRE sheet as one continuous multi-shot generation (whole sheet as reference) with duration_s and format. 5) adcopy per clip only if ad/commercial in BRAND LANGUAGE else empty. 6) explanation_de in GERMAN. 7) title_de per clip; frame label lowercase a-z0-9_. Return ONLY JSON: {\"explanation_de\":\"...\",\"grid\":{\"cols\":3,\"rows\":2},\"clips\":[{\"title_de\":\"...\",\"model\":\"seedance\",\"cut\":\"none\",\"uses_full_sheet\":true,\"format\":\"16:9\",\"duration_s\":4,\"frames\":[],\"prompt_en\":\"...\",\"adcopy\":\"\"}],\"sequence\":{\"per_model\":[{\"model\":\"seedance\",\"format\":\"16:9\",\"duration_s\":12,\"prompt_en\":\"...\"}]}}";
+function nativeClip(c){return c.cut==="none"||c.uses_full_sheet||!!NATIVE[c.model];}
+function routingBox(){
+ const de=LANG==="de";
+ const rows=de?[["Text/Titel im Bild","GPT Image 2"],["Charaktere / Storyboard-Sheet","Nano Banana Pro"],["Deutscher Voice im Clip","HappyHorse 1.0"],["Viele Referenzen + Beat-Sync","Seedance 2.0"],["Jeden Cut selbst setzen","Kling 3.0 Omni"],["Übergang zwischen Sheets","Kling 3.0 (First/Last-Frame)"],["Länger als 15 s","Veo 3.1 (Scene Extension)"],["Schnell iterieren / Moodboard","Gemini Omni (10s)"]]:[["Text/titles in image","GPT Image 2"],["Characters / storyboard sheet","Nano Banana Pro"],["German voice in clip","HappyHorse 1.0"],["Many references + beat-sync","Seedance 2.0"],["Set every cut yourself","Kling 3.0 Omni"],["Transition between sheets","Kling 3.0 (first/last-frame)"],["Longer than 15 s","Veo 3.1 (Scene Extension)"],["Fast iterate / moodboard","Gemini Omni (10s)"]];
+ let r='<details class="rbox" style="margin-top:13px;border:1px solid var(--line);border-radius:10px;padding:9px 13px"><summary style="cursor:pointer;font-weight:600">'+(de?"Modell-Routing — welches Modell wofür?":"Model routing — which model for what?")+'</summary><div class="small" style="margin-top:8px;line-height:1.7">';
+ rows.forEach(x=>r+='<div>• <b>'+x[0]+'</b> → '+x[1]+'</div>');
+ r+='</div></details>';
+ if(S.sbImage&&S.models.seedance){r+='<div class="small" style="margin-top:10px;background:#fff6e6;border-radius:8px;padding:9px 13px;line-height:1.6">'+(de?"⚠ Seedance-Hinweis: Sheets mit vielen Gesichtern/Close-ups werden manchmal als „NSFW\" blockiert. Falls das passiert: weite Ganzkörper-Shots, Gesichter klein, keine Close-ups, dicke weiße Panel-Ränder, lieber 1×N-Streifen statt 2×2-Grid.":"⚠ Seedance note: sheets with many faces/close-ups are sometimes blocked as „NSFW\". If so: wide full-body shots, small faces, no close-ups, thick white panel borders, prefer a 1×N strip over a 2×2 grid.")+'</div>';}
+ return r;
+}
+function viewDir(){
+ let r='<div class="card"><h2>'+tr("navDir")+'</h2>';
+ r+=S.sbImage?'<img class="prev" src="'+S.sbImage+'" style="margin-top:0"/>':'<div class="small">'+(LANG==="de"?"Tipp: erst im Storyboard-Tab ein Sheet erzeugen/hochladen.":"Tip: create/upload a sheet in the Storyboard tab first.")+'</div>';
+ r+=routingBox();
+ r+='<div style="margin-top:13px"><span class="tag">'+tr("exportT")+'</span><div class="chips" id="zipMode"><button class="chip'+(S.sbZip==="clip"?" on":"")+'" data-z="clip">'+tr("zClip")+'</button><button class="chip'+(S.sbZip==="whole"?" on":"")+'" data-z="whole">'+tr("zWhole")+'</button></div></div>';
+ r+='<button class="btn" id="plan" style="margin-top:13px">'+tr("plan")+'</button><div id="pErr" class="x-err"></div></div>';
+ r+='<div class="card" style="margin-top:16px" id="planOut">'+(S.plan?planHTML():'<div class="empty">'+tr("emptyDir")+'</div>')+'</div>';
+ return r;
+}
+function wireDir(){$("plan").onclick=plan;document.querySelectorAll("#zipMode [data-z]").forEach(b=>b.onclick=()=>{S.sbZip=b.dataset.z;document.querySelectorAll("#zipMode [data-z]").forEach(x=>x.classList.toggle("on",x===b));if(S.plan){$("planOut").innerHTML=planHTML();bindPlan();}});bindPlan();}
+function bindPlan(){if(!S.plan)return;const a=$("dlAll");if(a)a.onclick=buildAll;(S.plan.clips||[]).forEach((c,ci)=>{const b=$("dl"+ci);if(b)b.onclick=()=>buildClip(c,ci);});((S.plan.sequence&&S.plan.sequence.per_model)||[]).forEach((s,si)=>{const b=$("seq"+si);if(b)b.onclick=()=>buildSeq(s,si);});}
+async function plan(){const b=$("plan");b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("thinking");$("pErr").textContent="";
+ const want=MODELS.filter(m=>S.models[m[0]]).map(m=>m[0]).join(", ")||"kling";
+ const cb=castBlock();const prevP=lastPresent();const adv=(S.cast.advice&&S.cast.advice.cast_prompt_en)?S.cast.advice.cast_prompt_en:"";
+ const content=[{type:"text",text:"STORYLINE: "+story()+"\nSTYLE: "+styleTok()+"\nCHARACTER DNA: "+(S.dna||"\u2014")+(cb?"\nCAST (named characters \u2014 keep each DNA byte-identical, tag as @Name in the model's asset syntax, honor entrances/exits, and add per clip a field cast_present:[\"Name\",...] listing which cast members appear):\n"+cb:"")+(prevP.length?"\nPREVIOUS SCENE PRESENT: "+prevP.join(", "):"")+(adv?"\nCASTING DIRECTION (apply this ensemble blocking):\n"+adv:"")+"\nTARGET MODELS: "+want+"\nFORMAT: "+S.aspect+"\nBRAND LANGUAGE: "+S.brand+"\nStoryboard sheet attached: "+(S.sbImage?"yes \u2014 storyboard-native models use the whole sheet; frame-based models get cuts":"no")}];
+ if(S.sbImage){const big=await fitImage(S.sbImage,1568);const ib=imgBlock(big);if(ib)content.unshift(ib);}
+ try{const txt=await claude([{role:"user",content}],SYS_PLAN,4000);S.plan=parseJSON(txt);$("planOut").innerHTML=planHTML();bindPlan();
+  try{if(activeActors().length){var pres=[];(S.plan.clips||[]).forEach(function(c){(c.cast_present||[]).forEach(function(n){if(pres.indexOf(n)<0)pres.push(n);});});recordScene((S.plan.clips&&S.plan.clips[0]&&S.plan.clips[0].title_de)||(story()||"").slice(0,40),pres);}}catch(_){}
+ }
+ catch(e){$("pErr").textContent="\u26a0 "+e.message+" \u2014 "+tr("backendHint");}
+ b.disabled=false;b.textContent=tr("plan");
+}
+function cellCrop(g,cell){const c=cell%g.cols,r=Math.floor(cell/g.cols);return{x:c/g.cols,y:r/g.rows,w:1/g.cols,h:1/g.rows};}
+function cropURL(crop){if(!S.sbImgEl)return null;const W=S.sbImgEl.width,H=S.sbImgEl.height,cv=document.createElement("canvas");cv.width=Math.max(1,Math.round(crop.w*W));cv.height=Math.max(1,Math.round(crop.h*H));cv.getContext("2d").drawImage(S.sbImgEl,crop.x*W,crop.y*H,crop.w*W,crop.h*H,0,0,cv.width,cv.height);return cv.toDataURL("image/png");}
+function framesOf(c,ci){return (c.frames||[]).map((fr,fi)=>{const crop=fr.crop||(S.plan.grid&&fr.cell!=null?cellCrop(S.plan.grid,fr.cell):null);return{label:(fr.label||("clip"+(ci+1)+"_f"+(fi+1))).replace(/[^a-z0-9_]/gi,"_"),url:crop?cropURL(crop):null};});}
+function slug(t){return (t||"x").replace(/[^a-z0-9]/gi,"_").toLowerCase();}
+function sheetExt(){return S.sbImage&&S.sbImage.indexOf("image/jpeg")>=0?"jpg":"png";}
+async function dlZip(zip,name){const blob=await zip.generateAsync({type:"blob"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name+".zip";a.click();}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function planHTML(){
+ let r="";if(S.plan.explanation_de)r+='<div class="expl">'+esc(S.plan.explanation_de)+'</div>';
+ if(S.sbZip==="whole"){
+   const pm=(S.plan.sequence&&S.plan.sequence.per_model)||[];
+   if(!pm.length)r+='<div class="small">'+(LANG==="de"?"Keine Sequenz-Prompts \u2014 die gew\u00e4hlten Modelle sind nicht storyboard-nativ. Wechsle auf \u201ePro Clip\u201c.":"No sequence prompts \u2014 selected models are not storyboard-native. Switch to per-clip.")+'</div>';
+   pm.forEach((s,si)=>{r+='<div class="clip"><h3>'+(LANG==="de"?"Sequenz":"Sequence")+' \u00b7 '+((s.model||"").toUpperCase())+'</h3><div class="meta">'+(s.format||S.aspect)+' \u00b7 '+(s.duration_s||"?")+'s \u00b7 '+(LANG==="de"?"ganzes Sheet":"whole sheet")+'</div>'+(S.sbImage?'<img class="prev" src="'+S.sbImage+'"/>':'')+'<button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button><pre>'+esc(s.prompt_en||"")+'</pre><button class="dlbtn" id="seq'+si+'">'+tr("dl")+' \u2014 '+((s.model||"").toUpperCase())+'</button></div>';});
+   return r;
+ }
+ r+='<button class="btn sec" id="dlAll" style="margin-bottom:13px">'+tr("dlall")+'</button>';
+ (S.plan.clips||[]).forEach((c,ci)=>{
+   const native=nativeClip(c);const fr=native?[]:framesOf(c,ci);let body;
+   if(native){body=(S.sbImage?'<img class="prev" src="'+S.sbImage+'"/>':'')+'<div class="meta" style="margin-top:6px">'+(LANG==="de"?"ganzes Sheet als Referenz \u2014 kein Schnitt":"whole sheet as reference \u2014 no cut")+'</div>';}
+   else{let fh="";fr.forEach(f=>fh+='<div class="f">'+(f.url?'<img src="'+f.url+'"/>':'<div style="width:72px;height:72px;border:1px dashed var(--line);border-radius:8px"></div>')+'<div class="fl">'+f.label+'</div></div>');body=(fr.length?'<div class="frames">'+fh+'</div>':'');}
+   r+='<div class="clip"><h3>Clip '+(ci+1)+' \u00b7 '+esc(c.title_de||"")+'</h3><div class="meta">'+((c.model||"").toUpperCase())+' \u00b7 '+(c.format||S.aspect)+' \u00b7 '+(c.duration_s||"?")+'s \u00b7 '+(native?(LANG==="de"?"Sheet":"sheet"):fr.length+' frames')+'</div>'+body+'<button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button><pre>'+esc(c.prompt_en||"")+'</pre>'+(c.adcopy?'<button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button><pre style="background:#fff6e6">AD ('+esc(S.brand)+'): '+esc(c.adcopy)+'</pre>':'')+'<button class="dlbtn" id="dl'+ci+'">'+tr("dl")+' \u2014 Clip '+(ci+1)+'</button></div>';
+ });
+ return r;
+}
+async function buildClip(c,ci){const native=nativeClip(c);const zip=new JSZip();
+ if(native){if(S.sbImage)zip.file("storyboard_sheet."+sheetExt(),S.sbImage.split(",")[1],{base64:true});}
+ else{framesOf(c,ci).forEach(f=>{if(f.url)zip.file(f.label+".png",f.url.split(",")[1],{base64:true});});}
+ zip.file("prompt_"+(c.model||"model")+".txt",c.prompt_en||"");
+ if(c.adcopy)zip.file("adcopy_"+S.brand.toLowerCase()+".txt",c.adcopy);
+ zip.file("clip_info.txt","Clip "+(ci+1)+": "+(c.title_de||"")+"\nModel: "+c.model+"\nMode: "+(native?"whole sheet (no cut)":"frames")+"\nFormat: "+(c.format||S.aspect)+"\nDuration: "+(c.duration_s||"?")+"s\nStyle: "+styleTok()+"\nDNA: "+(S.dna||"\u2014"));
+ await dlZip(zip,"clip"+(ci+1)+"_"+slug(c.title_de||"shot"));}
+async function buildSeq(s,si){const zip=new JSZip();if(S.sbImage)zip.file("storyboard_sheet."+sheetExt(),S.sbImage.split(",")[1],{base64:true});
+ zip.file("sequence_"+(s.model||"model")+".txt",s.prompt_en||"");
+ zip.file("sequence_info.txt","Full-sequence prompt (whole sheet)\nModel: "+s.model+"\nFormat: "+(s.format||S.aspect)+"\nDuration: "+(s.duration_s||"?")+"s\nStyle: "+styleTok()+"\nDNA: "+(S.dna||"\u2014"));
+ await dlZip(zip,"sequence_"+(s.model||"model"));}
+async function buildAll(){if(S.sbZip==="whole"){const pm=(S.plan.sequence&&S.plan.sequence.per_model)||[];for(let i=0;i<pm.length;i++){await buildSeq(pm[i],i);await wait(500);}return;}const cs=S.plan.clips||[];for(let i=0;i<cs.length;i++){await buildClip(cs[i],i);await wait(500);}}
+
+/* ===== STORY TREE ===== */
+window.cpEl=function(btn){var pre=btn.nextElementSibling;if(pre&&navigator.clipboard)navigator.clipboard.writeText(pre.textContent);var o=btn.textContent;btn.textContent=tr("copied");setTimeout(function(){btn.textContent=o;},1000);};
+function uid(){return "n"+Math.random().toString(36).slice(2,9);}
+function treeDepth(id){var d=0,p=S.tree.nodes[id].parent;while(p){d++;p=S.tree.nodes[p].parent;}return d;}
+function layout(){var N=S.tree.nodes,row=0;(function dfs(id){var n=N[id],k=n.children||[];if(!k.length){n._y=row++;}else{k.forEach(dfs);n._y=(N[k[0]]._y+N[k[k.length-1]]._y)/2;}n._x=treeDepth(id);})(S.tree.root);var maxd=0;for(var id in N){if(N[id]._x>maxd)maxd=N[id]._x;}return {maxd:maxd,rows:row};}
+function viewTree(){
+ var r='<div class="card"><h2>'+tr("navTree")+'</h2><div class="small">'+(LANG==="de"?"Verzweige deine Story wie Äste. Knoten antippen = aktiv; von dort neue Zweige (KI-Vorschläge oder eigener Text). Wird auf dem Server gespeichert.":"Branch your story like a tree. Tap a node to make it active; add branches (AI suggestions or your own). Saved on the server.")+'</div>';
+ r+='<div class="seg" style="align-items:center;margin-top:11px"><input type="text" id="treeId" value="'+esc(S.treeId)+'" style="max-width:170px"/><button class="btn sec" id="treeReload" style="width:auto;padding:10px 14px">'+tr("treeLoad")+'</button><span id="treeSaveMsg" class="small" style="margin-left:auto"></span></div>';
+ if(!S.tree){r+='<div class="empty" style="margin-top:13px">'+(LANG==="de"?"Lade Baum…":"Loading…")+'</div></div>';return r;}
+ var L=layout(),colW=200,rowH=118,W=60+L.maxd*colW+180,H=30+L.rows*rowH+40,N=S.tree.nodes,id,n;
+ r+='<div style="overflow:auto;border:1px solid var(--line2);border-radius:14px;margin-top:13px;background:#fafafa"><div style="position:relative;width:'+W+'px;height:'+H+'px">';
+ var svg='<svg width="'+W+'" height="'+H+'" style="position:absolute;inset:0;pointer-events:none">';
+ for(id in N){n=N[id];(n.children||[]).forEach(function(cid){var c=N[cid],x1=20+n._x*colW+160,y1=20+n._y*rowH+34,x2=20+c._x*colW,y2=20+c._y*rowH+34;svg+='<path d="M'+x1+' '+y1+' C'+(x1+40)+' '+y1+' '+(x2-40)+' '+y2+' '+x2+' '+y2+'" stroke="#c7c7cc" stroke-width="2" fill="none"/>';});}
+ svg+='</svg>';r+=svg;
+ for(id in N){n=N[id];var x=20+n._x*colW,y=20+n._y*rowH,act=id===S.treeSel;r+='<div class="tnode'+(act?' act':'')+'" data-n="'+id+'" style="position:absolute;left:'+x+'px;top:'+y+'px">'+(n.sheet?'<img src="'+n.sheet+'"/>':'')+'<div class="tt">'+esc((n.beat||"·").split("\n")[0].slice(0,70))+'</div></div>';}
+ r+='</div></div>';
+ r+=nodeDetail();
+ r+='</div>';
+ return r;
+}
+function nodeDetail(){var n=S.tree.nodes[S.treeSel];if(!n)return"";
+ var r='<div class="card" style="margin-top:16px"><h2>'+(LANG==="de"?"Knoten":"Node")+'</h2>';
+ r+='<label class="fld"><span class="tag">'+(LANG==="de"?"Beat / Handlungsschritt":"Beat")+'</span><textarea id="nBeat">'+esc(n.beat||"")+'</textarea></label>';
+ if(n.sheet)r+='<img class="prev" src="'+n.sheet+'" style="margin-top:0"/>';
+ r+='<div class="seg" style="margin-top:10px"><button class="btn sec" id="nSheet" style="flex:1">'+(LANG==="de"?"Sheet hochladen":"Upload sheet")+'</button><input type="file" id="nSheetF" accept="image/*" hidden/><button class="btn" id="nOpen" style="flex:1">'+tr("openInDir")+'</button></div>';
+ r+='<button class="btn" id="nSuggest" style="margin-top:10px">'+tr("suggestBtn")+'</button><div id="nSug"></div>';
+ r+='<label class="fld" style="margin-top:12px"><span class="tag">'+tr("ownBranch")+'</span><input type="text" id="nOwn" placeholder="'+(LANG==="de"?"Wie geht es weiter?":"What happens next?")+'"/></label><button class="btn sec" id="nAdd">'+tr("addBranch")+'</button>';
+ if(n.id!==S.tree.root)r+='<button class="btn sec" id="nDel" style="margin-top:10px;color:#d70015">'+(LANG==="de"?"Knoten löschen":"Delete node")+'</button>';
+ r+='</div>';return r;
+}
+function wireTree(){
+ if($("treeId"))$("treeId").oninput=function(e){S.treeId=e.target.value.trim()||"default";};
+ if($("treeReload"))$("treeReload").onclick=function(){S.tree=null;render();treeLoad();};
+ document.querySelectorAll(".tnode").forEach(function(b){b.onclick=function(){selectNode(b.dataset.n);};});
+ if($("nBeat"))$("nBeat").oninput=function(e){S.tree.nodes[S.treeSel].beat=e.target.value;scheduleSave();};
+ if($("nSheet")){var f=$("nSheetF");$("nSheet").onclick=function(){f.click();};f.onchange=function(e){nodeSheet(e.target.files[0]);};}
+ if($("nOpen"))$("nOpen").onclick=openInDir;
+ if($("nSuggest"))$("nSuggest").onclick=suggestNext;
+ if($("nAdd"))$("nAdd").onclick=function(){var v=$("nOwn").value.trim();if(v)addNode(S.treeSel,v);};
+ if($("nDel"))$("nDel").onclick=function(){delNode(S.treeSel);};
+}
+function newTree(){var root=uid();S.tree={root:root,active:root,nodes:{}};S.tree.nodes[root]={id:root,parent:null,beat:story()||(LANG==="de"?"Start":"Start"),sheet:null,children:[]};S.treeSel=root;}
+async function treeLoad(){try{var res=await api({action:"tree_load",id:S.treeId});var d=res.d;if(d&&!d.empty&&d.nodes){S.tree=d;if(!S.tree.nodes[S.tree.active])S.tree.active=S.tree.root;S.treeSel=S.tree.active;}else{newTree();}}catch(e){newTree();}if(MODE==="tree")render();}
+var _saveT=null;
+function scheduleSave(){clearTimeout(_saveT);_saveT=setTimeout(treeSave,800);}
+async function treeSave(){if(!S.tree)return;S.tree.active=S.treeSel;try{await api({action:"tree_save",id:S.treeId,tree:S.tree});var m=$("treeSaveMsg");if(m){m.textContent=tr("saveOk");setTimeout(function(){if($("treeSaveMsg"))$("treeSaveMsg").textContent="";},1200);}}catch(e){}}
+function addNode(parentId,beat){var id=uid();S.tree.nodes[id]={id:id,parent:parentId,beat:beat,sheet:null,children:[]};S.tree.nodes[parentId].children.push(id);S.treeSel=id;scheduleSave();render();}
+function delNode(id){var n=S.tree.nodes[id];if(!n||id===S.tree.root)return;(function rm(x){(S.tree.nodes[x].children||[]).slice().forEach(rm);delete S.tree.nodes[x];})(id);var p=S.tree.nodes[n.parent];if(p)p.children=p.children.filter(function(c){return c!==id;});S.treeSel=n.parent||S.tree.root;scheduleSave();render();}
+function loadNodeIntoProject(n){if($("story"))$("story").value=n.beat||"";S.sbImage=n.sheet||null;S.sbImgEl=null;if(n.sheet){var im=new Image();im.onload=function(){S.sbImgEl=im;};im.src=n.sheet;}}
+function selectNode(id){S.treeSel=id;loadNodeIntoProject(S.tree.nodes[id]);scheduleSave();render();}
+function nodeSheet(file){if(!file)return;var r=new FileReader();r.onload=async function(){var small=await fitImage(r.result,1024);S.tree.nodes[S.treeSel].sheet=small;loadNodeIntoProject(S.tree.nodes[S.treeSel]);scheduleSave();render();};r.readAsDataURL(file);}
+function openInDir(){loadNodeIntoProject(S.tree.nodes[S.treeSel]);MODE="dir";document.querySelectorAll("#nav button").forEach(function(x){x.classList.toggle("on",x.dataset.m==="dir");});render();}
+function pathBeats(){var out=[],id=S.treeSel;while(id){out.unshift(S.tree.nodes[id].beat||"");id=S.tree.nodes[id].parent;}return out;}
+var SYS_BRANCH="You are PROMPTO85, a story-development director. Given the STYLE and the STORY SO FAR (a path of beats from start to the current point), propose 2-4 DISTINCT, compelling ways the story could continue from the current beat - genuinely different directions, not minor variants. Each: a short German title and a 1-2 sentence German beat description. Return ONLY JSON: {\"suggestions\":[{\"title_de\":\"...\",\"beat_de\":\"...\"}]}";
+async function suggestNext(){var b=$("nSuggest");b.disabled=true;b.innerHTML='<span class="spin"></span> '+tr("thinking");
+ try{var txt=await claude([{role:"user",content:"STYLE: "+styleTok()+"\nSTORY SO FAR (beats):\n"+pathBeats().map(function(x,i){return (i+1)+". "+x;}).join("\n")}],SYS_BRANCH,1300);var j=parseJSON(txt);var box=$("nSug");box.innerHTML="";(j.suggestions||[]).forEach(function(s){var d=document.createElement("div");d.className="clip";d.style.margin="10px 0 0";d.innerHTML='<h3>'+esc(s.title_de||"")+'</h3><div class="small">'+esc(s.beat_de||"")+'</div>';var ab=document.createElement("button");ab.className="dlbtn";ab.textContent="+ "+tr("addBranch");ab.onclick=function(){addNode(S.treeSel,(s.title_de?s.title_de+": ":"")+(s.beat_de||""));};d.appendChild(ab);box.appendChild(d);});}
+ catch(e){$("nSug").innerHTML='<div class="x-err">\u26a0 '+e.message+'</div>';}
+ b.disabled=false;b.textContent=tr("suggestBtn");}
+
+/* ===== AGENT ===== */
+function viewAgent(){
+ let r='<div class="card"><h2>'+tr("navAgent")+'</h2><div class="chat" id="chat">';
+ if(!S.chat.length)r+='<div class="msg a">'+(LANG==="de"?"Hi, ich bin dein Prompto-Regisseur. Ich behalte Stil, Handlung und Clips im Blick und helfe dir mit Rat. Was planen wir?":"Hi, I'm your Prompto director. I keep track of style, story and clips and help with advice. What are we planning?")+'</div>';
+ S.chat.forEach(m=>r+='<div class="msg '+(m.role==="user"?"u":"a")+'">'+esc(m.content)+'</div>');
+ r+='</div><div class="chatbar"><input type="text" id="cin" placeholder="'+tr("agentPlaceholder")+'"/><button class="btn" id="csend" style="width:auto;padding:12px 18px">'+tr("send")+'</button></div><div id="aErr" class="x-err"></div></div>';
+ return r;
+}
+function wireAgent(){const inp=$("cin");$("csend").onclick=sendAgent;inp.onkeydown=e=>{if(e.key==="Enter")sendAgent();};const ch=$("chat");ch.scrollTop=ch.scrollHeight;}
+function agentSys(){const want=MODELS.filter(m=>S.models[m[0]]).map(m=>m[0]).join(", ")||"—";
+ return "You are the PROMPTO85 Agent — a warm, sharp AI film-director assistant who keeps an overview of the user's project and helps with practical, expert advice on cinematography, prompting, style and the per-model workflow. Reply in "+(LANG==="de"?"GERMAN":"ENGLISH")+", concise and friendly. Prompts you suggest stay in English; ad copy in the brand language. You advise and can tell the user which tab/button to use, but you don't execute actions yourself. PROJECT STATE — story: "+(story()||"—")+"; style: "+styleTok()+"; character DNA: "+(S.dna||"—")+"; target models: "+want+"; format: "+S.aspect+"; brand language: "+S.brand+"; storyboard loaded: "+(S.sbImage?"yes":"no")+"; plan made: "+(S.plan?"yes ("+(S.plan.clips||[]).length+" clips)":"no")+".";}
+async function sendAgent(){const inp=$("cin");const q=inp.value.trim();if(!q)return;inp.value="";S.chat.push({role:"user",content:q});render();
+ const hist=S.chat.map(m=>({role:m.role,content:m.content}));
+ try{const txt=await claude(hist,agentSys(),1500);S.chat.push({role:"assistant",content:txt});render();}
+ catch(e){S.chat.push({role:"assistant",content:"⚠ "+e.message+" — "+tr("backendHint")});render();}
+}
+
+/* ---- utils ---- */
+function esc(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function cp(t,btn){navigator.clipboard&&navigator.clipboard.writeText(t);const o=btn.textContent;btn.textContent=tr("copied");setTimeout(()=>btn.textContent=o,1100);}
+</script>
+</body>
+</html>
