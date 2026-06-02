@@ -62,4 +62,25 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 ## 14. Storyboard-Motor ist look-abhängig — nicht dogmatisch Nano
 - **Problem:** Doku-Annahme „Nano Banana Pro = Storyboard-König“ stimmt nicht universell.
 - **Befund (direkter A/B, Aurora-Glass-Look):** GPT Image 2 lieferte den kinoreifen Glas-/Refraktions-Look mit gebauter Architektur, nassen Reflexionen und sauberem „eerie-but-gentle“-Ton klar überlegen; Nano Banana Pro kippte ins weiche, milchig-flache Kinderbuch und verschenkte die Refraktion.
+- **Bestätigt (2. Projekt, Anima-Machina-Look):** GPT Image 2 trug auch den halb-photorealen Messing-/Mechanik-Look mit Maßstab und Lichtphysik überzeugend — verstärkt §14.
 - **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B), nicht per Default festlegen. Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet → **GPT Image 2**; flach-illustrativ mit vielen konsistenten Figuren → **Nano Banana Pro**.
+
+## 15. Seedance: Storyboard als Sequenz lesen, NICHT das Grid animieren
+- **Problem:** Seedance animiert ein Storyboard-Sheet sonst als EIN Bild — schwenkt/zoomt über das Grid, statt die Panels als Cuts zu lesen.
+- **Lösung (Prompt-Kern):** explizit „each panel is ONE separate camera shot, read left-to-right top-to-bottom as the shot order“; KEIN Pan/Zoom über das Grid, KEINE Panel-Ränder/Gutter/Split-Screen/zwei Panels gleichzeitig; jeder Moment = ein full-frame Shot, der das Videoformat füllt.
+- **Recherchierte Kniffe (Quellen Feb–Apr 2026):**
+  - **Narrative Logik zwischen den Panels ausschreiben** — das Modell braucht die Story-Progression, nicht nur die Bildfolge.
+  - **Zeitcodierte Shot-Liste** (0–2,5s Panel 1 …), je Shot Subject → Action → Camera (EIN Move).
+  - **Standard-Tier, nicht Fast/Turbo** für Publish-Qualität.
+  - **Omni-Referenzen:** bis zu 9 Bilder — Sheet als Anker + die Charactersheets als Identitäts-Refs mitgeben.
+  - **Text-Bleed verhindern:** zusätzlich zu §13 „text overlay, no captions on screen“ in den Prompt.
+  - **Aspect matchen:** Output-Orientierung = Panel-Orientierung (siehe §17).
+
+## 16. Eine Identitätsfigur pro Charactersheet
+- **Problem:** zwei Figuren auf ein Sheet quetschen halbiert Fläche/Pixel pro Figur → schwächere Gesichts-/Detailtreue, genau das, wofür Sheets da sind.
+- **Lösung:** je ein eigenes Sheet pro Identitätsfigur (max Pixel = max Treue). Statisten / Props / Automaten dürfen aufs Ensemble- bzw. Roster-Blatt — da zählt Überblick mehr als Pixeldichte.
+
+## 17. Panel-Orientierung = finale Video-Orientierung (Reframe-Falle)
+- **Problem:** quadratische Panels in einem 9:16-Output → Seedance croppt die Seiten weg, breite/cinematische Kompositionen verlieren Bildinhalt.
+- **Lösung:** Sheets in der Orientierung rendern, die die Shots erhält. Landscape-Panels → nativ 16:9, kein Crop. Ist 9:16 das einzige Ziel, Panels gleich hochkant komponieren (Subjekt mittig/safe), nicht erst im Video reframen lassen.
+- **Faustregel:** breit-cinematischer Doku-Look → 16:9 rendern, ggf. in Post auf 9:16 beschneiden; reines Short-Vertikal → Panels direkt vertikal anlegen.
