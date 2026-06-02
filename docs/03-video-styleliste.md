@@ -1,7 +1,7 @@
 # Prompto85 — Erweiterte Video-/Bild-Styleliste
 **Stand: Juni 2026**
 
-Jeder Style = Name + Prompt-Token-Block (Englisch). In Prompto als Dropdown + Custom-Feld + visueller Picker (38 Styles).
+Jeder Style = Name + Prompt-Token-Block (Englisch). In Prompto als Dropdown + Custom-Feld + visueller Picker (40 Styles).
 
 ---
 
@@ -11,6 +11,8 @@ Jeder Style = Name + Prompt-Token-Block (Englisch). In Prompto als Dropdown + Cu
 - **Apple-meets-Superbowl (SEM/CERN)** — physical precision objects under single-source light, near-monochromatic palette, scientific-instrument reference, ultra-clean, macro clarity.
 - **2.5D Flat-Dimensional (Kinderserie)** — flat but dimensional cartoon, soft rounded shapes, warm flat colors, gentle parallax, friendly, calm pacing.
 - **Sacred Rainbow Ultimate** — Merkaba geometry, prismatic rainbow refraction, sacred light bursts, epic anime power-up energy.
+- **Aurora Glass** — translucent frosted-glass beings with subtle iridescent spectral refraction, delicate rainbow edge-caustics, quiet ambient luminance not emissive blaze, controlled low bloom, no lens flares, no sparkle stars; in an Aurora World set of readable solid nighttime architecture, wet reflective floors, cool grey-blue palette, soft volumetric moonlight, faint embossed sacred-geometry motifs, premium restrained cinematic eerie-but-gentle mood. *(Projekt: „Stay Curious“ Mystery-Format, Jugendliche 11–16.)*
+- **Anima Machina** — a living cathedral-scale machine fusing mechanical and organic: cast brass, copper and blued steel; interlocking gears, pipes and lattices following sacred geometry, grown-and-forged rather than assembled; threaded with vein-like luminous conduits glowing chazon-orange and violet; breathing crystalline cores. Render semi-photoreal with art-grade finish (believable PBR + deliberate stylized cinematic hand). Lit like a CERN hall / chip-fab cleanroom: single-source volumetric light, deep precise shadow, extreme macro detail, warm metal against cool light, fine dust motes; slow reverent ARTE-documentary mood, awe of scale. *(Projekt: chazon.eu als lebende Maschine, Doku-Walkthrough.)*
 
 ## B) Anime / Comic
 - **Records-of-Ragnarök Shonen** — heavy ink, dramatic speed-lines, divine scale, intense facial close-ups (nur Bild, nicht Seedance-Sheet), god-fight energy.
@@ -64,5 +66,7 @@ Jeder Style = Name + Prompt-Token-Block (Englisch). In Prompto als Dropdown + Cu
 - **Seedance-Sheets:** Close-up-lastige Styles fürs Sheet meiden (NSFW-Risiko). Close-up-Look erst im Clip-Prompt.
 - **Kinderserie:** 2.5D Flat, Watercolor Storybook, Pixar-Soft 3D, Felt-Stop-motion, Paper-Cut.
 - **Fight/Epic:** Records-of-Ragnarök, Shonen Action, Epic Blockbuster, Sacred Rainbow Ultimate.
-- **Chazon-Brand-Loops:** Dirty Sacred, Apple-meets-Superbowl, Brutalist Sci-Fi.
-- **Stil-Kontinuität:** zuletzt genutzten Style pro Projekt als Default vorschlagen.
+- **Chazon-Brand-Loops:** Dirty Sacred, Apple-meets-Superbowl, Brutalist Sci-Fi, Anima Machina.
+- **Jugend-Mystery (11–16):** Aurora Glass — „klar KI, aber Kunst“, eerie-but-gentle, kein Suchtdesign.
+- **Marken-Doku / lebende Maschine:** Anima Machina — 16:9 rendern (breite Maßstabs-Fahrten), Veo als Lead für lange Pull-Backs.
+- **Stil-Kontinuität:** zuletzt genutzten Style pro Projekt als Default vorschlagen. **Achtung:** bei explizitem „neuer Stil“-Wunsch NICHT den letzten Look übertragen (Lektion aus Projekt 2: Aurora versehentlich in Anima Machina geschleppt).
