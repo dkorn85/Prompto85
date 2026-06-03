@@ -51,6 +51,14 @@ NAME — one-line intent
 - TOKEN BLOCK: `physical precision object under single-source light, SEM/CERN reference aesthetic, near-monochromatic, clean large-format, extreme surface detail, black void background, volumetric light`
 - Voice for narration (chazon.eu/elements TTS/ConvAgent): ElevenLabs voice ID `zKHQdbB8oaQ7roNTiDTK`.
 
+**Aurora Glass** — "Stay Curious" teen-mystery format (ages 11–16), eerie-but-gentle.
+- TOKEN BLOCK: `translucent frosted-glass beings with subtle iridescent spectral refraction, delicate rainbow edge-caustics, quiet ambient luminance not emissive blaze, controlled low bloom, no lens flares, no sparkle stars; readable solid nighttime architecture, wet reflective floors, cool grey-blue palette, soft volumetric moonlight, faint embossed sacred-geometry motifs, premium restrained cinematic eerie-but-gentle mood`
+- do: keep it premium and restrained; glass characters read clearly against solid sets; storyboard engine GPT Image 2 (won the look A/B, §14). don't: milky flat kids-book look, sparkle/flares, addiction/cliffhanger pacing (§12).
+
+**Anima Machina** — chazon.eu as a living cathedral-scale machine; ARTE/CERN reverent doc-walkthrough.
+- TOKEN BLOCK: `living cathedral-scale machine fusing mechanical and organic, cast brass copper and blued steel, interlocking gears pipes and lattices following sacred geometry grown-and-forged not assembled, vein-like luminous conduits glowing chazon-orange and violet, breathing crystalline cores, semi-photoreal art-grade finish, single-source volumetric CERN-hall light, deep precise shadow, extreme macro detail, warm metal against cool light, fine dust motes, slow reverent ARTE-documentary awe of scale`
+- do: render 16:9 for the wide scale pull-backs (§17); Veo 3.1 for long moves; hybrid beings restate organic↔forged side per panel (§19). don't: carry the Aurora look over (this is an explicit new style); flat sacred-geometry digital tropes.
+
 **Character image house style** — for character sheets/key art.
 - TOKEN BLOCK: `9:16 hyperrealistic comic style, maximum detail, greenscreen background, no green tones on the character`
 
@@ -78,5 +86,5 @@ NAME — one-line intent
 ## How to use a profile
 1. Pick the profile (or blend two: "Sacred Precision × Hyperreal Commercial").
 2. Paste its TOKEN BLOCK into the master storyboard header as the locked style.
-3. Append character DNA strings.
-4. Reuse both byte-identical in every panel/shot/clip of the sequence.
+3. Append character DNA strings + the costume/state lock (§19).
+4. Reuse both byte-identical in every panel/shot/clip of the sequence. On an explicit "new style" request, do NOT carry the previous look over.
