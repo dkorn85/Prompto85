@@ -22,6 +22,8 @@
 
 Tree serverseitig persistent → jederzeit zurückspringen ohne Datenverlust.
 
+> **Detaillierte, an die Hand nehmende Nutzerreise:** die obigen Etappen sind in `docs/05-nutzerfuehrung-und-bedienhilfe.md` zu einer konkreten **7-Schritt-Reise** (Foto → Stil → Sheet-Prompt → Sheet-Upload+QA → Besetzungs-Gate → Storywriter → Daumenkino) mit fertigen deutschen In-App-Hilfetexten, Onboarding und Build-Tickets ausgearbeitet. `docs/05` ist die maßgebliche UX-Spezifikation; dieser §2 ist die Kurzform.
+
 ---
 
 ## 3. Auto-Routing (aus 01-modell-uebersicht abgeleitet)
@@ -55,6 +57,7 @@ Tree serverseitig persistent → jederzeit zurückspringen ohne Datenverlust.
 | Audio chaotisch | ElevenLabs = Stimme/SFX, Modell = nur Ambient; Clip-Endtag „ambient only, no music, no subtitles“ |
 | Charakter-Drift | Locked-Tokens + Costume-/State-Lock in jeden Prompt injiziert |
 | Style-Bruch | letzter Style bleibt Default (außer „neuer Stil“) |
+| Layout: langer Prompt sprengt Box | `pre` global umbrechen (`pre-wrap`/`overflow-wrap`), Grid-Hauptspalte `#main{min-width:0}` (§21) |
 
 Guardrails sind **Hinweise, keine Sperren** („Trotzdem so“).
 
@@ -77,16 +80,22 @@ Wiederverwendbare Beat-Gerüste fürs Storyboard (aus „ai-video-prompt-writer�
 - Auto-Routing-Legende + „Warum?“-Tooltips (routingBox/BESTAT) ✓
 - Seedance-Preflight-Hinweis ✓
 - Styleliste 15→**40** + visueller Style-Picker ✓ (zuletzt +Aurora Glass, +Anima Machina)
+- Layout-Fix: `pre`-Umbruch + `#main{min-width:0}` ✓ (Casting-Regie-Text sprengte die Box, §21)
 
-### P1
-- Assistiert/Profi-Toggle überall.
-- HappyHorse + Veo 3.1 + Gemini Omni voll durchverdrahten.
-- Agent triggert Plan auf Bestätigung.
+### P1 — Geführte Nutzerreise (Spezifikation: `docs/05`, Tickets G1–G9)
+- **G1** Geführt/Profi-Umschalter + 7-Schritt-Fortschrittsleiste (Orchestrierung über `render()`).
+- **G2** Referenzfoto-Upload (2. Drop-Zone) im Cast — eigenes Foto als Ausgangspunkt (`S.cast.pending`).
+- **G3** `genSheet`/`SYS_SHEET` nutzen das Referenzfoto (Vision) + „So erstellst du es“-Box.
+- **G4** Sheet-QA-Pass mit Tipps (`SYS_SHEET_QA`) beim Upload (Ähnlichkeit, Ansichten, Greenscreen, kein Text §13, eine Figur §16).
+- **G5** Schritt-5-Gate: Besetzungs-Checkliste + Verzweigung „weitere Figur / komplett“.
+- **G6** **Storywriter-Modul** (`SYS_STORYWRITER`) → Story → Szenen + je Szene ein regelkonformer Storyboard-Prompt; Übergabe an Story-Baum/Regie.
+- **G7** **Daumenkino/Flipbook-Viewer** (Play/Scrub/Tempo) — alle Sheets als Sequenz.
+- **G8** Inline-Hilfe überall: Tooltips, Leerzustände, Onboarding-Overlay, sanfte Regel-Hinweise.
+- Pipeline-Modus-Toggle (NATIVE/CUT) im Regie-Schritt (§20).
+- Still-Image-Linter (§18) · Costume-/State-Lock-Injektor (§19) · Szenentyp-Template-Picker (§5).
+- HappyHorse + Veo 3.1 + Gemini Omni voll durchverdrahten; Agent triggert Plan auf Bestätigung.
 - **Cast Room** ✓ (siehe OPERATIONS.md §5).
-- **NEU:** Pipeline-Modus-Toggle (NATIVE/CUT) im Regie-Schritt (§20).
-- **NEU:** Still-Image-Linter — markiert Zeit-/Bewegungsverben in Panels + schlägt sichtbares Äquivalent vor (§18).
-- **NEU:** Costume-/State-Lock-Injektor — Lock-Absatz pro Figur, Restate in jedes Panel + jeden Video-Prompt (§19).
-- **NEU:** Szenentyp-Template-Picker (§5).
+- **G9 / Deploy-Disziplin:** jedes Ticket einzeln → `node --check` aufs Inline-Script → File-Browser-Upload (OPERATIONS §2/§6) → testen. Kein Big-Bang.
 
 ### P2
 - Auto-Multi-Charakter-Konsistenz über Clips.
@@ -97,4 +106,4 @@ Wiederverwendbare Beat-Gerüste fürs Storyboard (aus „ai-video-prompt-writer�
 ---
 
 ## 7. Erfolgskriterium
-Neuling kommt ohne Vorwissen mit Default-Klicks zu einem brauchbaren Clip; Profi kann jeden Schritt überschreiben. Balance: sicher an die Hand genommen, volle Kontrolle.
+Neuling kommt ohne Vorwissen mit Default-Klicks (geführte 7-Schritt-Reise) zu einem brauchbaren Clip; Profi kann jeden Schritt überschreiben. Balance: sicher an die Hand genommen, volle Kontrolle.
