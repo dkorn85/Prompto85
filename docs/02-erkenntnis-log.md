@@ -22,6 +22,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **NATIVE** (Seedance, Kling, Veo, Omni, HappyHorse): ganzes Sheet als @sheet-Referenz, ein Sequenz-Prompt, kein eigener Schnitt.
 - **CUT** (GPT Image 2, Nano Banana, first/last): einzelne Frames croppen.
 - Schnitt-Logik automatisch aus dem Modell ableiten, nicht den User entscheiden lassen.
+- *(Vertieft und benannt in §20.)*
 
 ## 5. Übergänge per First/Last-Frame
 - Übergang-STARTframe = letztes Panel des Vor-Akts; LASTframe = erstes Panel des Folge-Akts. Kling 3.0 morpht dazwischen.
@@ -48,6 +49,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 
 ## 11. Charakter-Konsistenz
 - Locked-Tokens-Block einmal definieren (STYLE / pro Figur DNA / WORLD), in **jedem** Prompt wiederverwenden. Konsistenz über Figuren → Nano Banana Pro.
+- *(Verschärft in §19: expliziter Costume-/State-Lock.)*
 
 ## 12. Sicherheits-Leitplanke (inhaltlich)
 - **Keine echten, benannten Personen in Gewalt-/Kampf-Szenarien.** (Fight gegen erfundene/mythologische Wesen = ok.)
@@ -56,31 +58,46 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 ## 13. Text/Zahlen im Sheet werden mitanimiert
 - **Problem:** Seedance (und jedes Video-Modell) animiert sichtbaren Text/Zahlen im Storyboard-Sheet als bewegte Bildelemente mit — Panel-Nummern, Captions und In-World-Schilder („Block C“, „AREA SEALED“, „1927“) tauchen im Clip auf und flackern/verformen.
 - **Ursache:** das Modell behandelt jede lesbare Glyphe als Bildinhalt, nicht als Metadaten.
-- **Lösung:** **NULL Text / Zahlen / Captions / UI / Wasserzeichen in den Panels.** Panel-Reihenfolge lebt nur in der Shot-Liste, nicht im Bild. Jede In-World-Beschriftung (Schilder, Notizen, Poster, Spind-Nummern) abgewandt, unscharf oder leer halten — keine lesbaren Buchstaben/Ziffern.
-- **Verschärft bei GPT Image 2:** ~99–100 % Textgenauigkeit heißt, es schreibt Schilder *zuverlässig* hin, wenn man es nicht hart unterbindet. No-Text-Regel im Prompt explizit und prominent setzen.
+- **Lösung:** **NULL Text / Zahlen / Captions / UI / Wasserzeichen in den Panels** (gilt für den NATIVE-Weg). Panel-Reihenfolge lebt nur in der Shot-Liste, nicht im Bild. Jede In-World-Beschriftung (Schilder, Notizen, Poster, Spind-Nummern) abgewandt, unscharf oder leer halten.
+- **Verschärft bei GPT Image 2:** ~99–100 % Textgenauigkeit heißt, es schreibt Schilder *zuverlässig* hin, wenn man es nicht hart unterbindet.
+- **Ausnahme:** auf dem CUT-Weg (§20) sind Panel-Captions erlaubt — sie werden vor dem Animieren weggecroppt.
 
 ## 14. Storyboard-Motor ist look-abhängig — nicht dogmatisch Nano
 - **Problem:** Doku-Annahme „Nano Banana Pro = Storyboard-König“ stimmt nicht universell.
-- **Befund (direkter A/B, Aurora-Glass-Look):** GPT Image 2 lieferte den kinoreifen Glas-/Refraktions-Look mit gebauter Architektur, nassen Reflexionen und sauberem „eerie-but-gentle“-Ton klar überlegen; Nano Banana Pro kippte ins weiche, milchig-flache Kinderbuch und verschenkte die Refraktion.
-- **Bestätigt (2. Projekt, Anima-Machina-Look):** GPT Image 2 trug auch den halb-photorealen Messing-/Mechanik-Look mit Maßstab und Lichtphysik überzeugend — verstärkt §14.
-- **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B), nicht per Default festlegen. Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet → **GPT Image 2**; flach-illustrativ mit vielen konsistenten Figuren → **Nano Banana Pro**.
+- **Befund (direkter A/B, Aurora-Glass-Look):** GPT Image 2 lieferte den kinoreifen Glas-/Refraktions-Look mit gebauter Architektur, nassen Reflexionen und sauberem „eerie-but-gentle“-Ton klar überlegen; Nano Banana Pro kippte ins weiche, milchig-flache Kinderbuch.
+- **Bestätigt (2. Projekt, Anima-Machina-Look):** GPT Image 2 trug auch den halb-photorealen Messing-/Mechanik-Look mit Maßstab und Lichtphysik überzeugend.
+- **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B). Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet → **GPT Image 2**; flach-illustrativ mit vielen konsistenten Figuren → **Nano Banana Pro**.
 
 ## 15. Seedance: Storyboard als Sequenz lesen, NICHT das Grid animieren
 - **Problem:** Seedance animiert ein Storyboard-Sheet sonst als EIN Bild — schwenkt/zoomt über das Grid, statt die Panels als Cuts zu lesen.
-- **Lösung (Prompt-Kern):** explizit „each panel is ONE separate camera shot, read left-to-right top-to-bottom as the shot order“; KEIN Pan/Zoom über das Grid, KEINE Panel-Ränder/Gutter/Split-Screen/zwei Panels gleichzeitig; jeder Moment = ein full-frame Shot, der das Videoformat füllt.
-- **Recherchierte Kniffe (Quellen Feb–Apr 2026):**
-  - **Narrative Logik zwischen den Panels ausschreiben** — das Modell braucht die Story-Progression, nicht nur die Bildfolge.
-  - **Zeitcodierte Shot-Liste** (0–2,5s Panel 1 …), je Shot Subject → Action → Camera (EIN Move).
-  - **Standard-Tier, nicht Fast/Turbo** für Publish-Qualität.
-  - **Omni-Referenzen:** bis zu 9 Bilder — Sheet als Anker + die Charactersheets als Identitäts-Refs mitgeben.
-  - **Text-Bleed verhindern:** zusätzlich zu §13 „text overlay, no captions on screen“ in den Prompt.
-  - **Aspect matchen:** Output-Orientierung = Panel-Orientierung (siehe §17).
+- **Lösung (Prompt-Kern):** explizit „each panel is ONE separate camera shot, read left-to-right top-to-bottom as the shot order“; KEIN Pan/Zoom über das Grid, KEINE Panel-Ränder/Gutter/Split-Screen/zwei Panels gleichzeitig; jeder Moment = ein full-frame Shot.
+- **Recherchierte Kniffe (Quellen Feb–Apr 2026):** narrative Logik zwischen den Panels ausschreiben; zeitcodierte Shot-Liste; Standard-Tier statt Fast/Turbo; Omni-Referenzen (bis 9 Bilder, Sheet als Anker + Charactersheets); „text overlay, no captions on screen“ (Text-Bleed); Aspect matchen (§17).
 
 ## 16. Eine Identitätsfigur pro Charactersheet
-- **Problem:** zwei Figuren auf ein Sheet quetschen halbiert Fläche/Pixel pro Figur → schwächere Gesichts-/Detailtreue, genau das, wofür Sheets da sind.
-- **Lösung:** je ein eigenes Sheet pro Identitätsfigur (max Pixel = max Treue). Statisten / Props / Automaten dürfen aufs Ensemble- bzw. Roster-Blatt — da zählt Überblick mehr als Pixeldichte.
+- **Problem:** zwei Figuren auf ein Sheet quetschen halbiert Fläche/Pixel pro Figur → schwächere Treue.
+- **Lösung:** je ein eigenes Sheet pro Identitätsfigur. Statisten / Props / Automaten dürfen aufs Ensemble- bzw. Roster-Blatt.
 
 ## 17. Panel-Orientierung = finale Video-Orientierung (Reframe-Falle)
-- **Problem:** quadratische Panels in einem 9:16-Output → Seedance croppt die Seiten weg, breite/cinematische Kompositionen verlieren Bildinhalt.
-- **Lösung:** Sheets in der Orientierung rendern, die die Shots erhält. Landscape-Panels → nativ 16:9, kein Crop. Ist 9:16 das einzige Ziel, Panels gleich hochkant komponieren (Subjekt mittig/safe), nicht erst im Video reframen lassen.
-- **Faustregel:** breit-cinematischer Doku-Look → 16:9 rendern, ggf. in Post auf 9:16 beschneiden; reines Short-Vertikal → Panels direkt vertikal anlegen.
+- **Problem:** quadratische Panels in einem 9:16-Output → Seitencrop, breite Kompositionen verlieren Bildinhalt.
+- **Lösung:** Sheets in der Orientierung rendern, die die Shots erhält. Landscape → nativ 16:9. Ist 9:16 das Ziel, Panels gleich hochkant komponieren.
+- **Faustregel:** breit-cinematischer Doku-Look → 16:9; reines Short-Vertikal → vertikal anlegen.
+
+## 18. STILL-IMAGE-Regel (Panel = ein einzelnes Foto)
+- **Problem:** Panel-Beschreibungen mit Zeit-/Bewegungsverben lassen sich nicht als Einzelbild rendern — das Modell improvisiert oder verzerrt. Selbst passiert: „Dilo gives a calm nod“, „Tani notices / dawning understanding“, „Brandt glances back“.
+- **Regel:** jede Panel-Beschreibung muss als **ein einzelnes Foto** einfangbar sein. Test: „Könnte ein Fotograf das in einem Bild zeigen?“ — wenn nein, umschreiben. Bewegung gehört in den **Video-Prompt**, nicht ins Panel.
+- **Gültig (im Standbild sichtbar):** gehen, rennen, kauern, zeigen, halten, schauen, greifen, stehen, sitzen, umarmen, fallen, tragen, klettern, starren.
+- **Ungültig (brauchen Zeit/Bewegung):** nicken, Kopf schütteln, zustimmen, entscheiden, realisieren, sich umdrehen, anfangen/beenden, auf etwas reagieren, etwas off-screen bemerken.
+- **Übersetzung ins sichtbare Äquivalent:** „sie nickt“ → „leicht gesenktes Kinn, erleichterter Ausdruck“; „er realisiert, die Tür ist zu“ → „beide Hände flach an der Tür, Kopf gesenkt“; „sie reagiert auf das Gas“ → „taumelt zurück, eine Hand an der Maske, Augen weit“; „sie bemerkt die Spur“ → „gebeugt über die Stelle, Finger zeigt darauf“.
+
+## 19. State-/Restate-Lock (Costume + zustandsbehaftete Details)
+- **Problem:** Kleidung und zustandsbehaftete Details driften zwischen Panels — das Modell trägt sie nicht zuverlässig weiter.
+- **Costume-Lock:** pro Figur einen Kopf-bis-Fuß-Lock-Absatz definieren + Satz „every character's costume and appearance must remain exactly identical across all panels“. Geplante Wechsel explizit: `STATE CHANGE: [Figur] — ab Panel N: [neue Beschreibung]`.
+- **Restate-Regel (verallgemeinert aus der Face-Covering-Rule):** jedes **zustandsbehaftete** Detail in **jedem** Panel UND **jedem** Video-Prompt neu ausschreiben — nie Carry-forward annehmen. Beispiele bei uns: Merkaba-Anhänger sichtbar/verdeckt, Werkzeug in der Hand ja/nein, Maske/Helm ON/OFF, bei Hybrid-Figuren welche Körperseite organisch↔geschmiedet.
+
+## 20. Pipeline-Modi: NATIVE vs CUT (benannt, vertieft §4)
+- **NATIVE (unser Default):** ganzes Sheet als @sheet-Anker, EIN zeitcodierter Sequenz-Prompt, Kamera-Move pro Shot erlaubt, Modell schneidet selbst. Voraussetzungen: §13 (null Text/Captions im Sheet), §15 (Anti-Grid), 6 Panels (2×3), ≤15 s, §17 (Orientierung). Schnell, hält Anschlüsse, weniger Kontrolle pro Shot.
+- **CUT (aus „ai-video-prompt-writer“-Skill):** größeres Grid möglich (z. B. 4×3 / 12 Panels), jedes Panel **einzeln zugeschnitten** → **ein Video-Prompt pro Panel**, danach manuell montiert. Hier gilt:
+  - Panel-Captions **erlaubt** (Format „01. EXT. ORT — TAG/NACHT / max-6-Wort-Caption“, Monospace) — werden vor dem Animieren weggecroppt, daher kein §13-Konflikt.
+  - Video-Prompts: schlicht im **Präsens**, **kein** Kamera-Jargon, **keine** Panel-Querverweise („meanwhile/suddenly“), optional Dialog als `[Figur] says: "…"`, Endtag **„ambient only, no music, no subtitles“** (statt nur „No Music“ — unsere Audio-Policy §6).
+  - Volle Shot-Kontrolle + Captions, kostet aber manuellen Schnitt.
+- **Wahl pro Projekt:** NATIVE für schnelle, anschlusssichere Sequenzen; CUT, wenn jeder Shot einzeln kontrolliert werden soll.
