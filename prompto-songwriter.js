@@ -7,6 +7,8 @@
  *       formatierter Suno-Textprompt + Styleprompt (kopierbar).
  * Einbau: <script src="prompto-songwriter.js"></script> direkt vor </body> in index.html.
  * Haltung: kreativer Begleiter, KEIN Therapieersatz. Bei Krise behutsam zu echter Hilfe leiten.
+ * v3 UX: Zugaenglichkeit im Fokus - auto-wachsende Textfelder (kein Abschneiden), groessere Schrift,
+ *        44px Touch-Targets, farbcodierte Abschnittskarten, ruhigeres breiteres Overlay.
  */
 (function(){
 "use strict";
@@ -23,6 +25,9 @@ function readText(file){return new Promise(function(res,rej){var r=new FileReade
 function esc(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function $id(id){return document.getElementById(id);}
 function isTextFile(f){return (f.type&&f.type.indexOf("text/")===0)||/\.(txt|md|markdown|csv|json|srt|rtf|log|lrc)$/i.test(f.name||"");}
+/* Auto-Resize: Textfeld waechst mit dem Inhalt, nichts wird abgeschnitten */
+function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+4)+"px";}
+function wireGrow(scope){(scope||document).querySelectorAll(".sw-grow").forEach(function(ta){autoGrow(ta);ta.addEventListener("input",function(){autoGrow(ta);});});}
 
 /* ===== Persona + System-Prompts ===== */
 var P="You are the PROMPTO85 Songwriting Companion \u2014 a warm, gentle, emotionally intelligent co-writer for therapeutic songwriting. You help the user turn what moves them into a song. Be supportive and validating WITHOUT amplifying distress. You are NOT a therapist and do not diagnose; this is creative self-expression, not treatment. If the user expresses crisis, self-harm or suicidal thoughts, respond with genuine warmth, gently encourage them to reach out to someone they trust or professional support, and do NOT produce content that details or glorifies self-harm. Reply in GERMAN unless the user's material is clearly in another language. Keep a calm, caring, encouraging tone.";
@@ -75,35 +80,49 @@ function injectCSS(){
  if($id("swStyle"))return;var st=document.createElement("style");st.id="swStyle";
  st.textContent=[
  "#swLaunch{flex:0 0 auto;white-space:nowrap;border:none;background:linear-gradient(135deg,#7b61ff,#d65db1);color:#fff;font-weight:700;font-size:13px;padding:9px 14px;border-radius:9px;cursor:pointer;font-family:var(--body)}",
- ".sw-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}",
+ ".sw-ov{position:fixed;inset:0;background:rgba(20,16,40,.55);z-index:10000;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}",
  ".sw-ov.open{display:flex}",
- ".sw-box{background:#fff;max-width:780px;width:100%;border-radius:18px;padding:18px 18px 22px;box-shadow:0 24px 70px rgba(0,0,0,.3)}",
+ ".sw-box{background:#fff;max-width:860px;width:100%;border-radius:20px;padding:20px 22px 26px;box-shadow:0 24px 70px rgba(0,0,0,.3)}",
+ "@media(max-width:680px){.sw-box{padding:16px 14px 22px;border-radius:16px}}",
  ".sw-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}",
- ".sw-x{border:none;background:#eee;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px}",
- ".sw-rail{display:flex;gap:5px;margin:8px 0 14px}",
+ ".sw-x{border:none;background:#eee;border-radius:9px;width:38px;height:38px;cursor:pointer;font-size:17px}",
+ ".sw-rail{display:flex;gap:5px;margin:10px 0 16px}",
  ".sw-seg{flex:1;height:6px;border-radius:99px;background:#e5e5ea}.sw-seg.done{background:#34c759}.sw-seg.cur{background:#7b61ff}",
- ".sw-help{background:#f3efff;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.55;margin-bottom:14px;color:#1d1d1f}",
- ".sw-h{font-size:16px;font-weight:800;margin:0 0 5px}",
- ".sw-foot{display:flex;gap:8px;margin-top:16px}.sw-foot .btn{flex:1}",
- ".sw-field{display:block;margin-top:12px}.sw-field .tag{display:block;margin-bottom:6px}",
- ".sw-sel,.sw-ta,.sw-in{width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-family:var(--body);font-size:14px;background:#fff}",
- ".sw-ta{min-height:74px;resize:vertical}",
- ".sw-lyrics{background:var(--soft);border-radius:12px;padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px}",
- ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line2);border-radius:12px;padding:10px;margin-top:8px}",
- ".sw-imp{display:flex;gap:5px}.sw-imp .chip{padding:5px 10px;font-size:12px}",
- ".sw-asset{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:9px;padding:6px 10px;font-size:12px;margin:6px 6px 0 0}",
- ".sw-sec{border:1px solid var(--line2);border-radius:12px;padding:11px;margin-top:10px}",
- ".sw-sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}",
- ".sw-sec-h b{font-size:13px}",
- ".sw-sec-ta{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:var(--body);font-size:13.5px;line-height:1.55;min-height:60px;resize:vertical;background:#fff}",
- ".sw-acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}",
- ".sw-acts .chip{padding:5px 9px;font-size:11.5px}",
- ".sw-eval{border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.55}",
+ ".sw-help{background:#f4f1ff;border-radius:13px;padding:13px 15px;font-size:14px;line-height:1.6;margin-bottom:16px;color:#1d1d1f}",
+ ".sw-h{font-size:18px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em}",
+ ".sw-foot{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.sw-foot .btn{flex:1;min-height:48px;min-width:140px}",
+ ".sw-field{display:block;margin-top:14px}.sw-field .tag{display:block;margin-bottom:7px}",
+ ".sw-sel,.sw-ta,.sw-in{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-family:var(--body);font-size:15px;background:#fff;color:var(--ink)}",
+ ".sw-sel:focus,.sw-ta:focus,.sw-in:focus,.sw-sec-ta:focus{outline:none;border-color:#7b61ff;box-shadow:0 0 0 3px rgba(123,97,255,.16)}",
+ ".sw-ta{min-height:80px;resize:vertical;line-height:1.55}",
+ ".sw-lyrics{background:var(--soft);border-radius:12px;padding:14px;font-size:15px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px}",
+ ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);border-radius:13px;padding:13px;margin-top:10px}",
+ ".sw-imp{display:flex;gap:6px}.sw-imp .chip{padding:8px 12px;font-size:12.5px;min-height:38px}",
+ ".sw-asset{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border-radius:10px;padding:9px 12px;font-size:13px;margin:7px 7px 0 0}",
+ /* --- Co-Writing Abschnittskarten --- */
+ ".sw-secwrap{margin-top:6px}",
+ ".sw-sec{position:relative;border:1px solid var(--line2);border-radius:14px;padding:14px 15px 13px;margin-top:14px;background:#fff;border-left:5px solid #c9c9d4}",
+ ".sw-sec.is-chorus{background:#faf7ff;border-left-color:#7b61ff}",
+ ".sw-sec.is-bridge{background:#fff9f3;border-left-color:#e08e3c}",
+ ".sw-sec.is-intro,.sw-sec.is-outro{background:#f6f9fb;border-left-color:#5a9bd4}",
+ ".sw-sec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}",
+ ".sw-sec-h b{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#3a2a6b}",
+ ".sw-sec.is-bridge .sw-sec-h b{color:#9a5616}.sw-sec.is-intro .sw-sec-h b,.sw-sec.is-outro .sw-sec-h b{color:#2f6da3}.sw-sec:not(.is-chorus):not(.is-bridge):not(.is-intro):not(.is-outro) .sw-sec-h b{color:#444}",
+ ".sw-sec-badge{font-size:10.5px;font-weight:700;color:#86868b;background:rgba(0,0,0,.04);border-radius:6px;padding:3px 7px;white-space:nowrap}",
+ ".sw-sec-ta{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-family:var(--body);font-size:15px;line-height:1.7;background:#fff;resize:none;overflow:hidden;display:block}",
+ ".sw-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}",
+ ".sw-acts .chip{padding:9px 13px;font-size:12.5px;min-height:40px;display:inline-flex;align-items:center}",
+ ".sw-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.sw-toolbar .btn{flex:1;min-height:46px;min-width:150px}",
+ ".sw-eval{border-radius:13px;padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.6}",
  ".sw-eval.good{background:#eafaef;border:1px solid #b7e4c5}",
  ".sw-eval.mid{background:#fff6e6;border:1px solid #f0d9a8}",
  ".sw-eval.bad{background:#fdecec;border:1px solid #f3b4b4}",
- ".sw-score{font-weight:800;font-size:15px}",
- ".sw-gate{display:flex;align-items:center;gap:8px;background:#f3efff;border-radius:10px;padding:9px 12px;margin-top:12px;font-size:12.5px;color:#3a2a6b}"
+ ".sw-score{font-weight:800;font-size:16px}",
+ ".sw-eval ul{margin:9px 0 0;padding-left:20px}.sw-eval li{margin-bottom:4px}",
+ ".sw-gate{display:flex;align-items:center;gap:9px;border-radius:12px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5;font-weight:600}",
+ ".sw-gate.locked{background:#fff6e6;color:#8a5a12;border:1px solid #f0d9a8}",
+ ".sw-gate.open{background:#eafaef;color:#1a7f37;border:1px solid #b7e4c5}",
+ ".sw-hint{font-size:12.5px;color:var(--sub);margin-top:7px;line-height:1.5}"
  ].join("\n");
  document.head.appendChild(st);
 }
@@ -112,7 +131,7 @@ function injectCSS(){
 function ensureOverlay(){
  if($id("swOv"))return;
  var ov=document.createElement("div");ov.id="swOv";ov.className="sw-ov";
- ov.innerHTML='<div class="sw-box"><div class="sw-top"><b style="font-size:16px">\ud83c\udfb5 Therapeutisches Songwriting</b><button class="sw-x" id="swX">\u2715</button></div><div class="sw-rail" id="swRail"></div><div id="swBody"></div></div>';
+ ov.innerHTML='<div class="sw-box"><div class="sw-top"><b style="font-size:17px">\ud83c\udfb5 Therapeutisches Songwriting</b><button class="sw-x" id="swX" aria-label="schlie\u00dfen">\u2715</button></div><div class="sw-rail" id="swRail"></div><div id="swBody"></div></div>';
  document.body.appendChild(ov);
  ov.addEventListener("click",function(e){if(e.target===ov)close();});
  $id("swX").onclick=close;
@@ -139,6 +158,18 @@ function lyricsToSections(txt){var lines=(txt||"").split(/\r?\n/);var secs=[],cu
 function sectionsToLyrics(secs){return secs.map(function(s){return (s.head?s.head+"\n":"")+s.body;}).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();}
 function syncSectionsFromLyrics(){SW.sections=lyricsToSections(SW.lyrics);}
 function syncLyricsFromSections(){SW.lyrics=sectionsToLyrics(SW.sections);}
+/* Typ + lesbares Label aus Heading */
+function secType(head){var h=(head||"").toLowerCase();
+ if(/refrain|chorus|hook|kehrvers/.test(h))return "chorus";
+ if(/bridge|br\u00fccke/.test(h))return "bridge";
+ if(/intro/.test(h))return "intro";
+ if(/outro/.test(h))return "outro";
+ if(/pre-?refrain|pre-?chorus/.test(h))return "pre";
+ if(/strophe|verse/.test(h))return "verse";
+ return "other";}
+function secLabel(head,i){var clean=(head||"").replace(/^[\[\(]|[\]\)]$/g,"").trim();return clean||("Abschnitt "+(i+1));}
+function secBadge(t){return {chorus:"Refrain \u00b7 wiederkehrender Kern",bridge:"Bridge \u00b7 Wendepunkt",intro:"Intro",outro:"Outro \u00b7 Ausklang",pre:"Pre-Refrain \u00b7 Anlauf",verse:"Strophe \u00b7 erz\u00e4hlt",other:""}[t]||"";}
+function lineCount(s){return (s.body||"").split(/\n/).filter(function(x){return x.trim();}).length;}
 
 /* ===== Schritt-Renderer ===== */
 function renderStep(){rail();var b=$id("swBody");if(!b)return;[step1,step2,step3,step4,step5,step6][SW.step-1](b);}
@@ -147,8 +178,9 @@ function renderStep(){rail();var b=$id("swBody");if(!b)return;[step1,step2,step3
 function step1(b){
  b.innerHTML='<div class="sw-h">Willkommen \u2728</div>'+
  '<div class="sw-help">Hier verwandeln wir gemeinsam das, was dich bewegt, in einen Song. Es geht nicht um perfekte Reime, sondern um <b>deinen Ausdruck</b>. Das hier ist ein kreativer Begleiter \u2013 kein Ersatz f\u00fcr professionelle Unterst\u00fctzung. Wenn dir etwas schwer auf dem Herzen liegt, ist es v\u00f6llig okay, dir auch echte Menschen an die Seite zu holen.<br><br>In welche Richtung soll es gehen? Worum oder um wen geht es? Welches Gef\u00fchl soll der Song tragen?</div>'+
- '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>';
+ '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta sw-grow" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>';
  $id("swDir").oninput=function(e){SW.direction=e.target.value;};
+ wireGrow(b);
  foot(b,null,"Weiter \u2192 Material",function(){go(2);});
 }
 
@@ -158,7 +190,7 @@ function step2(b){
  '<div class="sw-help">Leg gern Bilder, Notizen, Tagebuch- oder Textdateien dazu \u2013 alles, was die KI lesen kann. Sie h\u00f6rt sensibel heraus, welche Themen und Gef\u00fchle darin stecken, und macht daraus Roh-Material f\u00fcr deinen Songtext. Du kannst auch ohne Material weitermachen.</div>'+
  '<div class="drop" id="swDrop">Bilder / Textdateien ablegen oder tippen</div><input type="file" id="swFile" accept="image/*,text/*,.txt,.md,.csv,.json,.srt,.rtf,.log,.lrc" multiple hidden/>'+
  '<div id="swAssets">'+assetList()+'</div>'+
- '<button class="btn" id="swExtract" style="margin-top:13px">\u2728 Themen heraush\u00f6ren</button><div id="swThemesOut" class="x-err"></div>';
+ '<button class="btn" id="swExtract" style="margin-top:14px;min-height:48px">\u2728 Themen heraush\u00f6ren</button><div id="swThemesOut" class="x-err"></div>';
  var z=$id("swDrop"),f=$id("swFile");
  z.onclick=function(){f.click();};
  ["dragover","dragenter"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.add("hot");});});
@@ -194,8 +226,8 @@ function step3(b){
  b.innerHTML='<div class="sw-h">Schritt 3 \u00b7 Deine Themen \u2013 wie eine Mindmap</div>'+
  '<div class="sw-help">Das sind die Themen, die wir heraush\u00f6ren. Markiere bei jedem, wie <b>wichtig</b> es dir ist. Die KI sortiert dann nach deiner Gewichtung \u2013 das Wichtigste tr\u00e4gt den Song. Du kannst eigene Themen erg\u00e4nzen.</div>'+
  refl+'<div id="swThemeList">'+list+'</div>'+
- '<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Eigenes Thema</span><input class="sw-in" id="swNewTheme" placeholder="Was geh\u00f6rt noch rein?"/></div><button class="btn sec" id="swAddTheme" style="width:auto;padding:11px 14px">+ Hinzuf\u00fcgen</button></div>'+
- '<button class="btn" id="swSort" style="margin-top:13px">\u2728 Nach Wichtigkeit sortieren</button><div id="swSortErr" class="x-err"></div>';
+ '<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Eigenes Thema</span><input class="sw-in" id="swNewTheme" placeholder="Was geh\u00f6rt noch rein?"/></div><button class="btn sec" id="swAddTheme" style="width:auto;padding:12px 16px;min-height:48px">+ Hinzuf\u00fcgen</button></div>'+
+ '<button class="btn" id="swSort" style="margin-top:14px;min-height:48px">\u2728 Nach Wichtigkeit sortieren</button><div id="swSortErr" class="x-err"></div>';
  wireThemes();
  $id("swAddTheme").onclick=function(){var v=$id("swNewTheme").value.trim();if(v){SW.themes.push({title:v,note:"",importance:"hoch"});renderStep();}};
  $id("swSort").onclick=sortThemes;
@@ -239,49 +271,52 @@ function designSummary(){var d=SW.design;var instr=d.instruments.concat((d.instr
 /* ===== Schritt 5 — Co-Writing Songtext ===== */
 function evalClass(){if(!SW.eval)return"";var s=SW.eval.score||0;return s>=8?"good":(s>=6?"mid":"bad");}
 function evalHTML(){if(!SW.eval)return"";var c=evalClass();var iss=(SW.eval.issues_de||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join("");
- return '<div class="sw-eval '+c+'"><div><span class="sw-score">Lektor: '+esc(String(SW.eval.score||"?"))+'/10</span> \u00b7 '+esc(SW.eval.summary_de||"")+'</div>'+(iss?'<ul style="margin:7px 0 0;padding-left:18px">'+iss+'</ul>':"")+'<div class="small" style="margin-top:6px">Die angezeigte Fassung ist bereits die vom Lektor korrigierte Version.</div></div>';}
+ return '<div class="sw-eval '+c+'"><div><span class="sw-score">Lektor: '+esc(String(SW.eval.score||"?"))+'/10</span> \u00b7 '+esc(SW.eval.summary_de||"")+'</div>'+(iss?'<ul>'+iss+'</ul>':"")+'<div class="sw-hint" style="margin-top:8px">Die angezeigte Fassung ist bereits die vom Lektor korrigierte Version.</div></div>';}
 function step5(b){
  var has=!!(SW.lyrics&&SW.sections.length);
  var html='<div class="sw-h">Schritt 5 \u00b7 Co-Writing \u2013 euer Songtext</div>'+
   '<div class="sw-help">Hier hast du die volle Kontrolle. Die KI schreibt einen Entwurf, ein strenger <b>Lektor</b> pr\u00fcft ihn automatisch (Wortwiederholungen, Zwangsreime, Sinn, Singbarkeit) und korrigiert. Danach kannst du <b>jeden Abschnitt einzeln</b> bearbeiten \u2013 direkt im Textfeld oder per Knopf. Erst wenn du zufrieden bist, gibst du den Text frei.</div>';
  if(!has){
-  html+='<button class="btn" id="swWrite">\u2728 Ersten Entwurf schreiben (mit Lektor-Pr\u00fcfung)</button><div id="swLyrErr" class="x-err"></div>';
+  html+='<button class="btn" id="swWrite" style="min-height:50px">\u2728 Ersten Entwurf schreiben (mit Lektor-Pr\u00fcfung)</button><div id="swLyrErr" class="x-err"></div>';
   b.innerHTML=html;$id("swWrite").onclick=writeLyrics;
   foot(b,4,"Weiter \u2192 Suno-Prompts",function(){gateNext();});
   return;
  }
  html+=(SW.title?'<div class="sw-field"><span class="tag">Titel</span><input class="sw-in" id="swTitle" value="'+esc(SW.title)+'"/></div>':"");
  html+=evalHTML();
- html+='<div id="swSecWrap">';
+ html+='<div class="sw-secwrap" id="swSecWrap">';
  SW.sections.forEach(function(s,i){
-  html+='<div class="sw-sec" data-i="'+i+'"><div class="sw-sec-h"><b>'+esc(s.head||("Abschnitt "+(i+1)))+'</b></div>'+
-   '<textarea class="sw-sec-ta" data-body="'+i+'">'+esc(s.body)+'</textarea>'+
+  var t=secType(s.head);var badge=secBadge(t);var ln=lineCount(s);
+  html+='<div class="sw-sec is-'+t+'" data-i="'+i+'"><div class="sw-sec-h"><b>'+esc(secLabel(s.head,i))+'</b>'+(badge?'<span class="sw-sec-badge">'+esc(badge)+(ln?' \u00b7 '+ln+' Z.':'')+'</span>':'')+'</div>'+
+   '<textarea class="sw-sec-ta sw-grow" data-body="'+i+'" rows="2">'+esc(s.body)+'</textarea>'+
    '<div class="sw-acts">'+
-     '<button class="chip" data-act="rewrite" data-i="'+i+'">neu schreiben</button>'+
-     '<button class="chip" data-act="imagery" data-i="'+i+'">mehr Bild</button>'+
-     '<button class="chip" data-act="lessrhyme" data-i="'+i+'">weniger Reim</button>'+
-     '<button class="chip" data-act="condense" data-i="'+i+'">verdichten</button>'+
+     '<button class="chip" data-act="rewrite" data-i="'+i+'">\u270e neu schreiben</button>'+
+     '<button class="chip" data-act="imagery" data-i="'+i+'">\ud83c\udfa8 mehr Bild</button>'+
+     '<button class="chip" data-act="lessrhyme" data-i="'+i+'">\u2702 weniger Reim</button>'+
+     '<button class="chip" data-act="condense" data-i="'+i+'">\u29c9 verdichten</button>'+
    '</div></div>';
  });
  html+='</div>';
- html+='<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Gesamter \u00c4nderungswunsch</span><input class="sw-in" id="swWish" placeholder="z.B. weniger pathetisch, mehr Alltag, Refrain einpr\u00e4gsamer \u2026"/></div><button class="btn sec" id="swRefine" style="width:auto;padding:11px 14px">\u00fcberarbeiten</button></div>';
- html+='<div class="sw-foot" style="margin-top:12px"><button class="btn sec" id="swRecheck">\ud83d\udd0d Nochmal pr\u00fcfen</button><button class="btn sec" id="swCopyAll">Text kopieren</button></div>';
- html+='<div class="sw-gate">'+(SW.approved?'\u2705 Freigegeben \u2013 du kannst zu Suno weitergehen.':'\ud83d\udd12 Suno ist gesperrt, bis du den Text freigibst.')+'</div>';
- var approve=document.createElement("button");approve.className="btn";approve.id="swApprove";approve.textContent=SW.approved?"\u2713 Freigegeben":"\u2713 Songtext freigeben";
+ html+='<div class="sw-field"><span class="tag">Gesamter \u00c4nderungswunsch (ganzer Song)</span><div style="display:flex;gap:8px;align-items:stretch"><input class="sw-in" id="swWish" style="flex:1" placeholder="z.B. weniger pathetisch, mehr Alltag, Refrain einpr\u00e4gsamer \u2026"/><button class="btn sec" id="swRefine" style="width:auto;padding:12px 16px;min-height:48px">\u00fcberarbeiten</button></div></div>';
+ html+='<div class="sw-toolbar"><button class="btn sec" id="swRecheck">\ud83d\udd0d Nochmal pr\u00fcfen</button><button class="btn sec" id="swCopyAll">\u29c9 Text kopieren</button></div>';
+ var locked=!SW.approved;
+ html+='<div class="sw-gate '+(locked?"locked":"open")+'" id="swGate">'+(locked?'\ud83d\udd12 Suno ist gesperrt, bis du den Text freigibst.':'\u2705 Freigegeben \u2013 du kannst zu Suno weitergehen.')+'</div>';
+ var approve=document.createElement("button");approve.className="btn";approve.id="swApprove";approve.style.minHeight="50px";approve.textContent=SW.approved?"\u2713 Freigegeben":"\u2713 Songtext freigeben";
  b.innerHTML=html;
 
  if($id("swTitle"))$id("swTitle").oninput=function(e){SW.title=e.target.value;};
  // Abschnitts-Textfelder: bei Eingabe Lyrics aktualisieren + Freigabe zuruecksetzen
- b.querySelectorAll("[data-body]").forEach(function(ta){ta.oninput=function(){var i=+ta.getAttribute("data-body");SW.sections[i].body=ta.value;syncLyricsFromSections();invalidate();};});
+ b.querySelectorAll("[data-body]").forEach(function(ta){ta.addEventListener("input",function(){var i=+ta.getAttribute("data-body");SW.sections[i].body=ta.value;syncLyricsFromSections();invalidate();});});
  b.querySelectorAll("[data-act]").forEach(function(btn){btn.onclick=function(){sectionAction(+btn.getAttribute("data-i"),btn.getAttribute("data-act"),btn);};});
  $id("swRefine").onclick=refineLyrics;
  $id("swRecheck").onclick=function(){runEval(null,$id("swRecheck"));};
  $id("swCopyAll").onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText((SW.title?SW.title+"\n\n":"")+SW.lyrics);var o=$id("swCopyAll").textContent;$id("swCopyAll").textContent="kopiert \u2713";setTimeout(function(){$id("swCopyAll").textContent=o;},1100);};
  approve.onclick=function(){SW.approved=true;renderStep();};
  foot(b,4,SW.approved?"Weiter \u2192 Suno-Prompts":"Erst freigeben",function(){gateNext();},approve);
+ wireGrow(b);
 }
-function invalidate(){SW.approved=false;var g=document.querySelector(".sw-gate");if(g)g.innerHTML='\ud83d\udd12 Text ge\u00e4ndert \u2013 bitte erneut pr\u00fcfen und freigeben.';var ap=$id("swApprove");if(ap)ap.textContent="\u2713 Songtext freigeben";}
-function gateNext(){if(!SW.approved){var g=document.querySelector(".sw-gate");if(g)g.innerHTML='\u26a0 Bitte zuerst auf \u201e\u2713 Songtext freigeben\u201c tippen.';return;}go(6);}
+function invalidate(){SW.approved=false;var g=$id("swGate");if(g){g.className="sw-gate locked";g.innerHTML='\ud83d\udd12 Text ge\u00e4ndert \u2013 bitte erneut pr\u00fcfen und freigeben.';}var ap=$id("swApprove");if(ap)ap.textContent="\u2713 Songtext freigeben";}
+function gateNext(){if(!SW.approved){var g=$id("swGate");if(g){g.className="sw-gate locked";g.innerHTML='\u26a0 Bitte zuerst auf \u201e\u2713 Songtext freigeben\u201c tippen.';}return;}go(6);}
 
 /* erster Entwurf -> danach Lektor */
 function writeLyrics(){var btn=$id("swWrite");busy(btn,true,"schreibt");if($id("swLyrErr"))$id("swLyrErr").textContent="";
@@ -325,9 +360,9 @@ function step6(b){
  }
  b.innerHTML='<div class="sw-h">Schritt 6 \u00b7 Suno-Prompts (kopierbar)</div>'+
  '<div class="sw-help">Zum Schluss bauen wir aus deinem freigegebenen Song zwei fertige Felder f\u00fcr Suno: den <b>Textprompt</b> (Lyrics mit [Abschnitts-Tags]) und den <b>Styleprompt</b> (Genre, Stimmung, Instrumente, Tempo, Tonart, Gesang). Beide direkt kopierbar.</div>'+
- '<button class="btn" id="swSuno">\u2728 Suno-Prompts erzeugen</button><div id="swSunoErr" class="x-err"></div>'+
- (SW.suno_lyrics?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><span class="tag" style="margin:0">Suno \u00b7 Textprompt (Custom Lyrics)</span><button class="cp" data-cp="swSunoLyr">kopieren</button></div><pre class="out" id="swSunoLyr">'+esc(SW.suno_lyrics)+'</pre>':"")+
- (SW.suno_style?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="tag" style="margin:0">Suno \u00b7 Styleprompt (Style of Music)</span><button class="cp" data-cp="swSunoSty">kopieren</button></div><pre class="out" id="swSunoSty">'+esc(SW.suno_style)+'</pre>':"");
+ '<button class="btn" id="swSuno" style="min-height:50px">\u2728 Suno-Prompts erzeugen</button><div id="swSunoErr" class="x-err"></div>'+
+ (SW.suno_lyrics?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><span class="tag" style="margin:0">Suno \u00b7 Textprompt (Custom Lyrics)</span><button class="cp" data-cp="swSunoLyr">kopieren</button></div><pre class="out" id="swSunoLyr">'+esc(SW.suno_lyrics)+'</pre>':"")+
+ (SW.suno_style?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><span class="tag" style="margin:0">Suno \u00b7 Styleprompt (Style of Music)</span><button class="cp" data-cp="swSunoSty">kopieren</button></div><pre class="out" id="swSunoSty">'+esc(SW.suno_style)+'</pre>':"");
  $id("swSuno").onclick=makeSuno;
  copyWire(b);
  var done=document.createElement("button");done.className="btn sec";done.textContent="Fertig \u2192 schlie\u00dfen";done.onclick=close;
