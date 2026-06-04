@@ -8,6 +8,7 @@
  * v5: Begleitetes Gespraech (SW_TALK = einfuehlsamer Gespraechsbegleiter, der Gefuehle greifbar macht:
  *     Gefuehl -> Bild/Szene -> Klang/Stimmung -> Worte; SW_HARVEST erntet das Gespraech als Material).
  *     Krisen-Waechter: bei Suizid/Krise verlaesst der Begleiter den Sammelmodus und leitet zu echter Hilfe.
+ * v5.1: Gespraechs-Einstieg sichtbar in Schritt 1 (Knopf "Lieber reden?"), Step-2-Karten hervorgehoben.
  */
 (function(){
 "use strict";
@@ -114,10 +115,19 @@ function injectCSS(){
  ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);border-radius:13px;padding:13px;margin-top:10px}",
  ".sw-imp{display:flex;gap:6px}.sw-imp .chip{padding:8px 12px;font-size:12.5px;min-height:38px}",
  ".sw-asset{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border-radius:10px;padding:9px 12px;font-size:13px;margin:7px 7px 0 0}",
+ /* --- Schritt 1: Wahl reden/schreiben --- */
+ ".sw-or{display:flex;align-items:center;gap:12px;margin:16px 0 4px;color:var(--sub);font-size:12.5px;font-weight:700;letter-spacing:.04em}",
+ ".sw-or:before,.sw-or:after{content:'';flex:1;height:1px;background:var(--line2)}",
+ ".sw-talk-cta{display:flex;gap:13px;align-items:center;width:100%;text-align:left;border:1.5px solid #d8ccff;background:linear-gradient(135deg,#faf7ff,#fff);border-radius:15px;padding:15px 16px;margin-top:6px;cursor:pointer;font-family:var(--body)}",
+ ".sw-talk-cta:hover{border-color:#7b61ff;box-shadow:0 0 0 3px rgba(123,97,255,.12)}",
+ ".sw-talk-cta .ic{font-size:24px;line-height:1}",
+ ".sw-talk-cta b{display:block;font-size:15px;font-weight:800;color:#3a2a6b;margin-bottom:2px}",
+ ".sw-talk-cta span.d{font-size:12.5px;color:var(--sub);line-height:1.45}",
  /* --- zwei Wege Karten in Schritt 2 --- */
  ".sw-ways{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}",
  "@media(max-width:560px){.sw-ways{grid-template-columns:1fr}}",
  ".sw-way{border:1px solid var(--line2);border-radius:14px;padding:15px;background:#fff}",
+ ".sw-way.accent{border:1.5px solid #d8ccff;background:linear-gradient(135deg,#faf7ff,#fff)}",
  ".sw-way h4{margin:0 0 5px;font-size:14.5px;font-weight:800}",
  ".sw-way p{margin:0 0 11px;font-size:12.5px;color:var(--sub);line-height:1.5}",
  /* --- Gespraech (Chat) --- */
@@ -224,12 +234,15 @@ function lineCount(s){return (s.body||"").split(/\n/).filter(function(x){return 
 /* ===== Schritt-Renderer ===== */
 function renderStep(){rail();var b=$id("swBody");if(!b)return;[step1,step2,step3,step4,step5,step6][SW.step-1](b);}
 
-/* Schritt 1 — Begruessung + Richtung */
+/* Schritt 1 — Begruessung + Richtung (mit sichtbarem Gespraechs-Einstieg) */
 function step1(b){
  b.innerHTML='<div class="sw-h">Willkommen \u2728</div>'+
  '<div class="sw-help">Hier verwandeln wir gemeinsam das, was dich bewegt, in einen Song. Es geht nicht um perfekte Reime, sondern um <b>deinen Ausdruck</b>. Das hier ist ein kreativer Begleiter \u2013 kein Ersatz f\u00fcr professionelle Unterst\u00fctzung. Wenn dir etwas schwer auf dem Herzen liegt, ist es v\u00f6llig okay, dir auch echte Menschen an die Seite zu holen.<br><br>In welche Richtung soll es gehen? Worum oder um wen geht es? Welches Gef\u00fchl soll der Song tragen?</div>'+
- '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta sw-grow" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>';
+ '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta sw-grow" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>'+
+ '<div class="sw-or">oder</div>'+
+ '<button type="button" class="sw-talk-cta" id="swTalkCta"><span class="ic">\ud83d\udde3\ufe0f</span><span><b>Lieber reden? Gespr\u00e4ch beginnen</b><span class="d">Du sp\u00fcrst etwas, findest aber noch nicht die Worte? Ein einf\u00fchlsamer Begleiter hilft dir Schritt f\u00fcr Schritt \u2013 vom Gef\u00fchl zu Bild, Klang und deinen eigenen Worten.</span></span></button>';
  $id("swDir").oninput=function(e){SW.direction=e.target.value;};
+ $id("swTalkCta").onclick=function(){SW.talkActive=true;go(2);};
  wireGrow(b);
  foot(b,null,"Weiter \u2192 Material",function(){go(2);});
 }
@@ -243,8 +256,8 @@ function step2(b){
    '<div class="sw-way"><h4>\ud83d\udcce Material hochladen</h4><p>Bilder, Notizen, Tagebuch- oder Textdateien \u2013 alles, was die KI lesen kann.</p>'+
      '<div class="drop" id="swDrop">ablegen oder tippen</div><input type="file" id="swFile" accept="image/*,text/*,.txt,.md,.csv,.json,.srt,.rtf,.log,.lrc" multiple hidden/>'+
      '<div id="swAssets" style="margin-top:8px">'+assetList()+'</div></div>'+
-   '<div class="sw-way"><h4>\ud83d\udde3\ufe0f Begleitetes Gespr\u00e4ch</h4><p>Du sp\u00fcrst etwas, aber findest die Worte noch nicht? Ein einf\u00fchlsamer Begleiter hilft dir, das Gef\u00fchl greifbar zu machen \u2013 und macht daraus Material.</p>'+
-     '<button class="btn sec" id="swTalkStart" style="min-height:48px;width:100%">Gespr\u00e4ch beginnen</button>'+
+   '<div class="sw-way accent"><h4>\ud83d\udde3\ufe0f Begleitetes Gespr\u00e4ch</h4><p>Du sp\u00fcrst etwas, aber findest die Worte noch nicht? Ein einf\u00fchlsamer Begleiter hilft dir, das Gef\u00fchl greifbar zu machen \u2013 und macht daraus Material.</p>'+
+     '<button class="btn" id="swTalkStart" style="min-height:48px;width:100%">Gespr\u00e4ch beginnen</button>'+
      (SW.talk.length?'<div class="sw-hint">\u2713 Gespr\u00e4ch vorhanden \u2013 wurde als Material \u00fcbernommen. Du kannst es fortsetzen.</div>':'')+'</div>'+
  '</div>'+
  '<button class="btn" id="swExtract" style="margin-top:16px;min-height:50px">\u2728 Themen heraush\u00f6ren &amp; Material pr\u00fcfen</button>'+
