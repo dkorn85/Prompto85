@@ -1,12 +1,13 @@
 /* Prompto85 — Therapeutisches Songwriting (Add-on)
  * Eigenstaendiges Modul wie prompto-guided.js: neuer Tab, spricht die App nur ueber das DOM/globale Funktionen an,
  * veraendert die bestehende Logik nicht. Eigenes IIFE -> ein Fehler hier kann index.html nicht brechen.
- * Flow: Begruessung+Richtung -> Assets lesen -> Themen-Mindmap + MATERIALBEWERTUNG (Fuellstand %) ->
- *       Gestaltung -> Co-Writing Songtext (Lektor + Wortlaut-Treue + Freigabe-Gate) -> Suno-Prompts.
+ * Flow: Begruessung+Richtung -> Material (Upload ODER begleitetes Gespraech) + MATERIALBEWERTUNG (Fuellstand %) ->
+ *       Themen -> Gestaltung -> Co-Writing Songtext (Lektor + Wortlaut-Treue + Freigabe-Gate) -> Suno-Prompts.
  * Einbau: <script src="prompto-songwriter.js"></script> direkt vor </body> in index.html.
  * Haltung: kreativer Begleiter, KEIN Therapieersatz. Bei Krise behutsam zu echter Hilfe leiten.
- * v4: Materialbewertung+Fuellstand (SW_MATERIAL), Ergaenzungs-Vorschlaege, Wortlaut-Treue (jeder Vers
- *     repraesentiert das Material), Session-Reset oben, Auto-Flow (Kette ohne Knopf-fuer-Knopf).
+ * v5: Begleitetes Gespraech (SW_TALK = einfuehlsamer Gespraechsbegleiter, der Gefuehle greifbar macht:
+ *     Gefuehl -> Bild/Szene -> Klang/Stimmung -> Worte; SW_HARVEST erntet das Gespraech als Material).
+ *     Krisen-Waechter: bei Suizid/Krise verlaesst der Begleiter den Sammelmodus und leitet zu echter Hilfe.
  */
 (function(){
 "use strict";
@@ -30,6 +31,12 @@ function wireGrow(scope){(scope||document).querySelectorAll(".sw-grow").forEach(
 /* ===== Persona + System-Prompts ===== */
 var P="You are the PROMPTO85 Songwriting Companion \u2014 a warm, gentle, emotionally intelligent co-writer for therapeutic songwriting. You help the user turn what moves them into a song. Be supportive and validating WITHOUT amplifying distress. You are NOT a therapist and do not diagnose; this is creative self-expression, not treatment. If the user expresses crisis, self-harm or suicidal thoughts, respond with genuine warmth, gently encourage them to reach out to someone they trust or professional support, and do NOT produce content that details or glorifies self-harm. Reply in GERMAN unless the user's material is clearly in another language. Keep a calm, caring, encouraging tone.";
 
+/* Begleitetes Gespraech: einfuehlsamer Begleiter, der Gefuehle greifbar macht und in Worte/Bilder/Klang uebersetzt */
+var SW_TALK=P+" You are now leading a GENTLE, GUIDED CONVERSATION to help a user who may NOT yet have the words for what moves them. You are a warm, trained-feeling companion (NOT a therapist, NOT a diagnosis) skilled at making a person's emotional world tangible and translating a feeling or sensation into images, sound and finally words that could become a song. METHOD, move forward step by step, ONE gentle question at a time: (1) help them name or circle the FEELING/sensation (where do they feel it, what is it like); (2) turn it into a concrete IMAGE, memory or scene (a place, a person, an object, a moment); (3) sense its SOUND/atmosphere (loud/quiet, fast/slow, which instrument or weather it feels like); (4) gather the user's OWN WORDS \u2014 short phrases they actually say, which can become lyric lines. Mirror back what you hear in their own words so they feel understood. Keep each reply short (2-5 sentences), one question at a time, never interrogate. Never rush to a song. SAFETY: if the user expresses crisis, self-harm or suicidal thoughts, STOP gathering material, respond with genuine warmth and gently guide them toward a trusted person or professional/crisis support; do not produce self-harm content. When you sense there is enough to work with, you may gently say so. Reply in GERMAN unless the user clearly uses another language. Output PLAIN conversational text only (no JSON, no lists unless natural).";
+
+/* Ernte: macht aus dem Gespraech verwertbares Material im Wortlaut des Nutzers */
+var SW_HARVEST=P+" Read the CONVERSATION between the companion and the user. Distil it into raw SONG MATERIAL that stays faithful to the USER'S OWN WORDS. Capture the feelings, the concrete images/scenes, the atmosphere/sound, and especially short phrases the user actually said that could become lyric lines (quote them verbatim). Do NOT invent new facts; only organise what is really there. Return ONLY JSON: {\"summary_de\":\"2-4 Saetze warme Zusammenfassung dessen, was im Gespraech lebendig wurde, nah am Wortlaut\",\"user_phrases\":[\"woertliches Zitat 1\",\"woertliches Zitat 2\"],\"images_de\":[\"konkretes Bild/Szene 1\",\"...\"],\"feelings_de\":[\"Gefuehl 1\",\"...\"],\"themes\":[{\"title_de\":\"Themen-Titel\",\"note_de\":\"1 Satz\"}]}";
+
 /* Strenge Lyrik-Qualitaetsregeln */
 var QUAL="STRICT LYRIC QUALITY RULES (the text must obey ALL of these): "+
 "1) NO clumsy word repetition: never repeat the same distinctive word within ~2 lines (e.g. avoid using \"Leere\" twice, \"ganzer\u2014ganzer\u2014ganz\", \"das wei\u00df ich, das wei\u00df ich\", \"bricht durch\u2026bricht durch\"). Deliberate refrain repetition and a chosen hook are allowed; lazy echoing is not. "+
@@ -40,13 +47,13 @@ var QUAL="STRICT LYRIC QUALITY RULES (the text must obey ALL of these): "+
 "6) Keep imagery concrete and personal over abstract sloganeering. Prefer plain honest language to grandiosity.";
 
 /* Wortlaut-Treue: jeder Vers soll das vorgegebene Material im genauen Wortlaut repraesentieren */
-var FIDELITY="MATERIAL FIDELITY (very important): The user's own MATERIAL (direction text, uploaded texts, the theme notes) is the heart of the song. Build the lyrics DIRECTLY from the user's own words and images. Where the user gave concrete wording, KEEP that wording verbatim inside the lines wherever it sings well, rather than paraphrasing it away. Each verse should map onto real material the user provided. Invent as little as possible \u2014 only add connective tissue where unavoidable, and keep any pure invention minimal and clearly in the user's spirit.";
+var FIDELITY="MATERIAL FIDELITY (very important): The user's own MATERIAL (direction text, uploaded texts, conversation phrases, the theme notes) is the heart of the song. Build the lyrics DIRECTLY from the user's own words and images. Where the user gave concrete wording, KEEP that wording verbatim inside the lines wherever it sings well, rather than paraphrasing it away. Each verse should map onto real material the user provided. Invent as little as possible \u2014 only add connective tissue where unavoidable, and keep any pure invention minimal and clearly in the user's spirit.";
 
 var SW_THEMES=P+" From the user's DIRECTION and any ASSETS (texts/images), sensitively surface the emotional THEMES that could become a song. Return ONLY JSON: {\"reflection_de\":\"1-2 warme deutsche Saetze, was du heraushoerst\",\"themes\":[{\"title_de\":\"kurzer Themen-Titel\",\"note_de\":\"1 Satz worum es geht\"}]}";
 var SW_SORT=P+" Given the THEMES with the user's own importance ratings, merge duplicates and sort by importance to the user (most important first). Keep the user's ratings. Return ONLY JSON: {\"themes\":[{\"title_de\":\"...\",\"note_de\":\"...\",\"importance\":\"hoch|mittel|niedrig\"}]}";
 
 /* Materialbewertung: wieviel echtes Material ist da vs. wieviel muesste die KI erfinden? */
-var SW_MATERIAL=P+" Assess how much REAL, usable raw material the user has provided (their DIRECTION text, uploaded ASSETS, and THEMES) versus how much you would have to INVENT to write an honest, personal song that genuinely represents them. Think in terms of: concrete details, names, images, events, feelings in the user's own words. A song needs enough specific material so that each verse can be grounded in something real. Return ONLY JSON: {\"fill_percent\":N (0-100, share of the song that can be grounded in the user's OWN material; 100 = plenty, nothing needs inventing),\"verdict\":\"ausreichend|knapp|zu_wenig\",\"assessment_de\":\"2-3 warme deutsche Saetze: was schon trägt und was fehlt\",\"suggestions\":[{\"q_de\":\"konkrete Frage oder Anregung, die fehlendes Material liefern wuerde\",\"hint_de\":\"1 kurzer Beispiel-Hinweis\"}]}";
+var SW_MATERIAL=P+" Assess how much REAL, usable raw material the user has provided (their DIRECTION text, uploaded ASSETS, conversation harvest, and THEMES) versus how much you would have to INVENT to write an honest, personal song that genuinely represents them. Think in terms of: concrete details, names, images, events, feelings in the user's own words. A song needs enough specific material so that each verse can be grounded in something real. Return ONLY JSON: {\"fill_percent\":N (0-100, share of the song that can be grounded in the user's OWN material; 100 = plenty, nothing needs inventing),\"verdict\":\"ausreichend|knapp|zu_wenig\",\"assessment_de\":\"2-3 warme deutsche Saetze: was schon trägt und was fehlt\",\"suggestions\":[{\"q_de\":\"konkrete Frage oder Anregung, die fehlendes Material liefern wuerde\",\"hint_de\":\"1 kurzer Beispiel-Hinweis\"}]}";
 
 var SW_LYRICS=P+" Write a complete, singable SONG TEXT in the user's language from the prioritised THEMES and the DESIGN choices (genre, mood, key, time signature, tempo/feel, instruments, structure schema). Honor the structure schema with clear section headings (Intro/Strophe/Pre-Refrain/Refrain/Bridge/Outro ...). Make the chorus memorable and the verses concrete and personal; authentic, hopeful where it fits, never clinical. "+FIDELITY+" "+QUAL+" Return ONLY JSON: {\"title_de\":\"Songtitel\",\"lyrics_de\":\"vollstaendiger Songtext mit Abschnitts-Ueberschriften\",\"note_de\":\"1 warmer Satz\"}";
 var SW_REFINE=P+" Revise the SONG TEXT according to the user's WISH. Keep what already works; change only what the wish asks for. "+FIDELITY+" "+QUAL+" Return ONLY JSON: {\"lyrics_de\":\"vollstaendiger ueberarbeiteter Songtext\"}";
@@ -74,6 +81,7 @@ var SCHEMAS=[
 
 /* ===== Zustand ===== */
 function freshState(){return {step:1,direction:"",assets:[],themes:[],material:null,_reflection:"",
+ talk:[],talkActive:false,
  design:{genre:GENRES[0],mood:[],key:"egal",timesig:"4/4",bpm:84,feel:"straight",instruments:[],schema:SCHEMAS[0].v,schemaCustom:"",instrCustom:""},
  title:"",lyrics:"",sections:[],eval:null,approved:false,suno_lyrics:"",suno_style:"",auto:false};}
 var SW=freshState();
@@ -106,6 +114,20 @@ function injectCSS(){
  ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);border-radius:13px;padding:13px;margin-top:10px}",
  ".sw-imp{display:flex;gap:6px}.sw-imp .chip{padding:8px 12px;font-size:12.5px;min-height:38px}",
  ".sw-asset{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border-radius:10px;padding:9px 12px;font-size:13px;margin:7px 7px 0 0}",
+ /* --- zwei Wege Karten in Schritt 2 --- */
+ ".sw-ways{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}",
+ "@media(max-width:560px){.sw-ways{grid-template-columns:1fr}}",
+ ".sw-way{border:1px solid var(--line2);border-radius:14px;padding:15px;background:#fff}",
+ ".sw-way h4{margin:0 0 5px;font-size:14.5px;font-weight:800}",
+ ".sw-way p{margin:0 0 11px;font-size:12.5px;color:var(--sub);line-height:1.5}",
+ /* --- Gespraech (Chat) --- */
+ ".sw-chat{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow:auto;padding:4px;margin-top:6px}",
+ ".sw-msg{padding:11px 14px;border-radius:15px;font-size:14.5px;max-width:88%;white-space:pre-wrap;line-height:1.55}",
+ ".sw-msg.a{align-self:flex-start;background:#f4f1ff;color:#1d1d1f;border-bottom-left-radius:5px}",
+ ".sw-msg.u{align-self:flex-end;background:#7b61ff;color:#fff;border-bottom-right-radius:5px}",
+ ".sw-chatbar{display:flex;gap:8px;margin-top:12px;align-items:stretch}",
+ ".sw-chatbar textarea{flex:1;min-height:46px;max-height:140px}",
+ ".sw-crisis{background:#fdecec;border:1px solid #f3b4b4;color:#7a1f1f;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.6;margin-top:10px}",
  /* --- Materialbewertung / Fuellstand --- */
  ".sw-fill{border-radius:14px;padding:15px 16px;margin-top:14px;border:1px solid var(--line2)}",
  ".sw-fill.good{background:#eafaef;border-color:#b7e4c5}",
@@ -212,13 +234,20 @@ function step1(b){
  foot(b,null,"Weiter \u2192 Material",function(){go(2);});
 }
 
-/* Schritt 2 — Assets */
+/* ===== Schritt 2 — Material: Upload ODER begleitetes Gespraech ===== */
 function step2(b){
- b.innerHTML='<div class="sw-h">Schritt 2 \u00b7 Material hinzuf\u00fcgen</div>'+
- '<div class="sw-help">Leg gern Bilder, Notizen, Tagebuch- oder Textdateien dazu \u2013 alles, was die KI lesen kann. Je mehr von <b>dir</b> dabei ist, desto mehr wird der Song wirklich deiner: jeder Vers soll dein Material widerspiegeln. Danach pr\u00fcft die KI, ob das Material ausreicht.</div>'+
- '<div class="drop" id="swDrop">Bilder / Textdateien ablegen oder tippen</div><input type="file" id="swFile" accept="image/*,text/*,.txt,.md,.csv,.json,.srt,.rtf,.log,.lrc" multiple hidden/>'+
- '<div id="swAssets">'+assetList()+'</div>'+
- '<button class="btn" id="swExtract" style="margin-top:14px;min-height:50px">\u2728 Themen heraush\u00f6ren &amp; Material pr\u00fcfen</button>'+
+ if(SW.talkActive){return renderTalk(b);}
+ b.innerHTML='<div class="sw-h">Schritt 2 \u00b7 Material sammeln</div>'+
+ '<div class="sw-help">Je mehr von <b>dir</b> einflie\u00dft, desto mehr wird der Song wirklich deiner \u2013 jeder Vers soll dein Material widerspiegeln. Du hast zwei Wege (auch kombinierbar): eigenes Material hochladen, oder ein <b>begleitetes Gespr\u00e4ch</b> f\u00fchren, wenn du noch nicht die richtigen Worte hast.</div>'+
+ '<div class="sw-ways">'+
+   '<div class="sw-way"><h4>\ud83d\udcce Material hochladen</h4><p>Bilder, Notizen, Tagebuch- oder Textdateien \u2013 alles, was die KI lesen kann.</p>'+
+     '<div class="drop" id="swDrop">ablegen oder tippen</div><input type="file" id="swFile" accept="image/*,text/*,.txt,.md,.csv,.json,.srt,.rtf,.log,.lrc" multiple hidden/>'+
+     '<div id="swAssets" style="margin-top:8px">'+assetList()+'</div></div>'+
+   '<div class="sw-way"><h4>\ud83d\udde3\ufe0f Begleitetes Gespr\u00e4ch</h4><p>Du sp\u00fcrst etwas, aber findest die Worte noch nicht? Ein einf\u00fchlsamer Begleiter hilft dir, das Gef\u00fchl greifbar zu machen \u2013 und macht daraus Material.</p>'+
+     '<button class="btn sec" id="swTalkStart" style="min-height:48px;width:100%">Gespr\u00e4ch beginnen</button>'+
+     (SW.talk.length?'<div class="sw-hint">\u2713 Gespr\u00e4ch vorhanden \u2013 wurde als Material \u00fcbernommen. Du kannst es fortsetzen.</div>':'')+'</div>'+
+ '</div>'+
+ '<button class="btn" id="swExtract" style="margin-top:16px;min-height:50px">\u2728 Themen heraush\u00f6ren &amp; Material pr\u00fcfen</button>'+
  '<div class="sw-hint">L\u00e4uft in einem Zug: Themen + Materialbewertung. Du kannst danach erg\u00e4nzen.</div>'+
  '<div id="swThemesOut" class="x-err"></div>';
  var z=$id("swDrop"),f=$id("swFile");
@@ -227,10 +256,11 @@ function step2(b){
  ["dragleave","drop"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.remove("hot");});});
  z.addEventListener("drop",function(e){addAssets([].slice.call(e.dataTransfer.files));});
  f.onchange=function(e){addAssets([].slice.call(e.target.files));};
+ $id("swTalkStart").onclick=startTalk;
  $id("swExtract").onclick=function(){extractThemes(true);};
  foot(b,1,"Weiter \u2192 Themen",function(){go(3);});
 }
-function assetList(){if(!SW.assets.length)return"";return SW.assets.map(function(a,i){return '<span class="sw-asset">'+(a.kind==="image"?"\ud83d\uddbc":"\ud83d\udcc4")+' '+esc(a.name)+' <button class="cp" data-del="'+i+'" style="color:#a11">\u2715</button></span>';}).join("");}
+function assetList(){if(!SW.assets.length)return"";return SW.assets.map(function(a,i){var ic=a.kind==="image"?"\ud83d\uddbc":(a.kind==="talk"?"\ud83d\udde3\ufe0f":"\ud83d\udcc4");return '<span class="sw-asset">'+ic+' '+esc(a.name)+' <button class="cp" data-del="'+i+'" style="color:#a11">\u2715</button></span>';}).join("");}
 function refreshAssets(){var el=$id("swAssets");if(el){el.innerHTML=assetList();el.querySelectorAll("[data-del]").forEach(function(btn){btn.onclick=function(){SW.assets.splice(+btn.getAttribute("data-del"),1);refreshAssets();};});}}
 function addAssets(files){var ps=files.map(function(f){
   if(f.type&&f.type.indexOf("image/")===0){return readDataURL(f).then(function(d){return fitImage(d,1568);}).then(function(u){SW.assets.push({kind:"image",name:f.name||"Bild",data:u});});}
@@ -239,12 +269,61 @@ function addAssets(files){var ps=files.map(function(f){
  });
  Promise.all(ps).then(refreshAssets);
 }
-function assetBlocks(){var out=[];SW.assets.forEach(function(a){if(a.kind==="image"){var ib=imgBlock(a.data);if(ib)out.push(ib);}else if(a.kind==="text"){out.push({type:"text",text:"DATEI \u201e"+a.name+"\u201c:\n"+a.text});}});return out;}
+function assetBlocks(){var out=[];SW.assets.forEach(function(a){if(a.kind==="image"){var ib=imgBlock(a.data);if(ib)out.push(ib);}else if(a.kind==="text"||a.kind==="talk"){out.push({type:"text",text:"DATEI \u201e"+a.name+"\u201c:\n"+a.text});}});return out;}
 /* materialText: alles in Worten des Nutzers fuer Bewertung & Wortlaut-Treue */
 function materialText(){var parts=[];if(SW.direction)parts.push("RICHTUNG (Wortlaut des Nutzers):\n"+SW.direction);
- SW.assets.forEach(function(a){if(a.kind==="text")parts.push("TEXT \u201e"+a.name+"\u201c (Wortlaut):\n"+a.text);else if(a.kind==="image")parts.push("BILD: "+a.name);});
+ SW.assets.forEach(function(a){if(a.kind==="text"||a.kind==="talk")parts.push((a.kind==="talk"?"AUS DEM GESPR\u00c4CH":"TEXT")+" \u201e"+a.name+"\u201c (Wortlaut):\n"+a.text);else if(a.kind==="image")parts.push("BILD: "+a.name);});
  if(SW.themes.length)parts.push("THEMEN:\n"+SW.themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n"));
  return parts.join("\n\n");}
+
+/* ===== Begleitetes Gespraech ===== */
+function startTalk(){SW.talkActive=true;if(!SW.talk.length){
+  var opener="Sch\u00f6n, dass du da bist. Wir m\u00fcssen die passenden Worte gar nicht sofort finden \u2013 wir tasten uns gemeinsam heran. Was bewegt dich gerade, wenn du an diesen Song denkst? Es darf auch nur ein Gef\u00fchl, ein Bild oder eine einzelne Erinnerung sein.";
+  SW.talk.push({role:"assistant",content:opener});
+ }renderStep();}
+function renderTalk(b){
+ var chat=SW.talk.map(function(m){return '<div class="sw-msg '+(m.role==="user"?"u":"a")+'">'+esc(m.content)+'</div>';}).join("");
+ b.innerHTML='<div class="sw-h">\ud83d\udde3\ufe0f Begleitetes Gespr\u00e4ch</div>'+
+  '<div class="sw-help">Nimm dir Zeit. Der Begleiter h\u00f6rt zu und hilft dir, vom Gef\u00fchl \u00fcber ein Bild und einen Klang zu deinen eigenen Worten zu kommen. Das ist <b>kein Therapieersatz</b> \u2013 wenn dich etwas \u00fcberw\u00e4ltigt, hol dir bitte auch echte Menschen dazu. Wenn genug zusammengekommen ist, tippe auf \u201eGespr\u00e4ch auswerten\u201c.</div>'+
+  '<div class="sw-chat" id="swChat">'+chat+'</div>'+
+  '<div id="swCrisis"></div>'+
+  '<div class="sw-chatbar"><textarea class="sw-ta sw-grow" id="swTalkIn" rows="1" placeholder="Schreib einfach, wie es sich anf\u00fchlt \u2026"></textarea><button class="btn" id="swTalkSend" style="width:auto;padding:0 18px;min-height:46px">Senden</button></div>'+
+  '<div class="sw-toolbar"><button class="btn sec" id="swTalkBack">\u2190 Zur\u00fcck zum Material</button><button class="btn" id="swTalkHarvest">\u2728 Gespr\u00e4ch auswerten \u2192 Material</button></div>'+
+  '<div id="swTalkErr" class="x-err"></div>';
+ var ch=$id("swChat");if(ch)ch.scrollTop=ch.scrollHeight;
+ var inp=$id("swTalkIn");
+ $id("swTalkSend").onclick=sendTalk;
+ inp.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendTalk();}});
+ $id("swTalkBack").onclick=function(){SW.talkActive=false;renderStep();};
+ $id("swTalkHarvest").onclick=harvestTalk;
+ wireGrow(b);
+}
+function sendTalk(){var inp=$id("swTalkIn");var q=(inp.value||"").trim();if(!q)return;inp.value="";autoGrow(inp);
+ SW.talk.push({role:"user",content:q});renderStep();
+ var btn=$id("swTalkSend");busy(btn,true,"");
+ var hist=SW.talk.map(function(m){return {role:m.role,content:m.content};});
+ claude(hist,SW_TALK,1100).then(function(txt){SW.talk.push({role:"assistant",content:(txt||"").trim()});renderStep();})
+ .catch(function(e){var ce=$id("swTalkErr");if(ce)ce.textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
+}
+function harvestTalk(){if(SW.talk.filter(function(m){return m.role==="user";}).length<1){var ce=$id("swTalkErr");if(ce)ce.textContent="Schreib zuerst ein, zwei S\u00e4tze \u2013 dann kann ich daraus Material machen.";return;}
+ var btn=$id("swTalkHarvest");busy(btn,true,"wertet aus");
+ var convo=SW.talk.map(function(m){return (m.role==="user"?"NUTZER":"BEGLEITER")+": "+m.content;}).join("\n");
+ claude([{role:"user",content:"CONVERSATION:\n"+convo}],SW_HARVEST,1800).then(function(txt){var j=parseJSON(txt);
+  // Material-Block aus dem Gespraech bauen (Wortlaut bewahren)
+  var lines=[];if(j.summary_de)lines.push(j.summary_de);
+  if(j.user_phrases&&j.user_phrases.length)lines.push("\nEigene Worte:\n- "+j.user_phrases.join("\n- "));
+  if(j.images_de&&j.images_de.length)lines.push("\nBilder/Szenen:\n- "+j.images_de.join("\n- "));
+  if(j.feelings_de&&j.feelings_de.length)lines.push("\nGef\u00fchle: "+j.feelings_de.join(", "));
+  var blockText=lines.join("\n");
+  // vorhandenes Gespraechs-Asset ersetzen statt doppeln
+  SW.assets=SW.assets.filter(function(a){return a.kind!=="talk";});
+  SW.assets.push({kind:"talk",name:"Gespr\u00e4ch",text:blockText});
+  (j.themes||[]).forEach(function(t){if(t&&t.title_de)SW.themes.push({title:t.title_de,note:t.note_de||"aus dem Gespr\u00e4ch",importance:"hoch"});});
+  SW.talkActive=false;
+  // direkt neu bewerten, damit der Fuellstand steigt
+  return assessMaterial();
+ }).then(function(){go(3);}).catch(function(e){var ce=$id("swTalkErr");if(ce)ce.textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
+}
 
 /* Themen heraushoeren -> dann (verkettet) Materialbewertung, dann nach Schritt 3 */
 function extractThemes(chain){var btn=$id("swExtract");busy(btn,true,"h\u00f6rt zu");if($id("swThemesOut"))$id("swThemesOut").textContent="";
@@ -266,8 +345,10 @@ function fillClass(){var v=SW.material?SW.material.verdict:"";return v==="ausrei
 function fillLabel(){var v=SW.material?SW.material.verdict:"";return v==="ausreichend"?"\u2705 Material reicht f\u00fcr einen authentischen Text":(v==="knapp"?"\u26a0 Knapp \u2013 etwas m\u00fcsste die KI erg\u00e4nzen":"\u26d4 Zu wenig \u2013 die KI m\u00fcsste viel erfinden");}
 function materialHTML(){if(!SW.material)return"";var m=SW.material,c=fillClass();
  var sug=(m.suggestions||[]).map(function(s,i){return '<div class="sw-sugg" data-sug="'+i+'"><div class="plus">+</div><div><b>'+esc(s.q_de||"")+'</b>'+(s.hint_de?'<div class="hint">'+esc(s.hint_de)+'</div>':'')+'</div></div>';}).join("");
- var sugBlock=(m.verdict!=="ausreichend"&&sug)?'<div style="margin-top:12px"><div class="tag">So machst du den Song noch mehr zu deinem \u2013 tippe zum \u00dcbernehmen:</div>'+sug+
+ var talkBtn=(m.verdict!=="ausreichend")?'<button class="btn sec" id="swToTalk" style="margin-top:10px;min-height:46px">\ud83d\udde3\ufe0f Im Gespr\u00e4ch mehr herausfinden</button>':"";
+ var sugBlock=(m.verdict!=="ausreichend"&&(sug||true))?'<div style="margin-top:12px"><div class="tag">So machst du den Song noch mehr zu deinem \u2013 tippe zum \u00dcbernehmen:</div>'+sug+
    '<div class="sw-addbox"><input class="sw-in" id="swAddMat" placeholder="\u2026oder eigenes Material/Detail hier eintippen"/><button class="btn sec" id="swAddMatBtn" style="width:auto;padding:12px 16px;min-height:48px">+ erg\u00e4nzen</button></div>'+
+   talkBtn+
    '<button class="btn sec" id="swRecheckMat" style="margin-top:10px;min-height:46px">\u21bb Material neu bewerten</button></div>':"";
  return '<div class="sw-fill '+c+'"><div class="sw-fill-top"><span class="sw-fill-pct">'+m.pct+'%</span><span class="sw-fill-lbl">'+fillLabel()+'</span></div>'+
   '<div class="sw-bar"><div class="sw-bar-fill" style="width:'+m.pct+'%"></div></div>'+
@@ -278,24 +359,22 @@ function step3(b){
  var list=SW.themes.length?SW.themes.map(function(t,i){return '<div class="sw-theme"><div><b>'+esc(t.title||("Thema "+(i+1)))+'</b><div class="small">'+esc(t.note||"")+'</div></div><div class="sw-imp" data-i="'+i+'">'+
    ["hoch","mittel","niedrig"].map(function(v){return '<button type="button" class="chip'+(t.importance===v?" on":"")+'" data-imp="'+v+'">'+v+'</button>';}).join("")+'</div></div>';}).join(""):'<div class="small">Noch keine Themen \u2013 trag unten dein erstes ein.</div>';
  b.innerHTML='<div class="sw-h">Schritt 3 \u00b7 Themen &amp; Material-F\u00fcllstand</div>'+
- '<div class="sw-help">Der <b>F\u00fcllstand</b> zeigt, wie viel vom Song aus <b>deinem eigenen Material</b> getragen werden kann. Ist er hoch, kann es direkt losgehen. Ist er niedrig, m\u00fcsste die KI viel erfinden \u2013 dann erg\u00e4nze unten gern noch etwas. Markiere bei jedem Thema, wie wichtig es dir ist.</div>'+
+ '<div class="sw-help">Der <b>F\u00fcllstand</b> zeigt, wie viel vom Song aus <b>deinem eigenen Material</b> getragen werden kann. Ist er hoch, kann es direkt losgehen. Ist er niedrig, m\u00fcsste die KI viel erfinden \u2013 dann erg\u00e4nze unten gern noch etwas oder geh ins Gespr\u00e4ch. Markiere bei jedem Thema, wie wichtig es dir ist.</div>'+
  materialHTML()+
  '<div class="sw-field"><span class="tag" style="margin-top:6px">Deine Themen</span><div id="swThemeList">'+list+'</div></div>'+
  '<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Eigenes Thema</span><input class="sw-in" id="swNewTheme" placeholder="Was geh\u00f6rt noch rein?"/></div><button class="btn sec" id="swAddTheme" style="width:auto;padding:12px 16px;min-height:48px">+ Hinzuf\u00fcgen</button></div>'+
  '<button class="btn sec" id="swSort" style="margin-top:14px;min-height:46px">\u2728 Themen nach Wichtigkeit sortieren</button><div id="swSortErr" class="x-err"></div>';
  wireThemes();
- // Material-Vorschlaege uebernehmen
  b.querySelectorAll("[data-sug]").forEach(function(card){card.onclick=function(){var s=SW.material.suggestions[+card.getAttribute("data-sug")];if(!s)return;var ans=prompt(s.q_de||"Dein Detail:",""); if(ans&&ans.trim()){adoptMaterial((s.q_de?s.q_de+" \u2014 ":"")+ans.trim());}};});
  if($id("swAddMatBtn"))$id("swAddMatBtn").onclick=function(){var v=$id("swAddMat").value.trim();if(v)adoptMaterial(v);};
+ if($id("swToTalk"))$id("swToTalk").onclick=function(){SW.talkActive=true;go(2);};
  if($id("swRecheckMat"))$id("swRecheckMat").onclick=function(){var bb=$id("swRecheckMat");busy(bb,true,"bewertet");assessMaterial().then(renderStep);};
  $id("swAddTheme").onclick=function(){var v=$id("swNewTheme").value.trim();if(v){SW.themes.push({title:v,note:"",importance:"hoch"});renderStep();}};
  $id("swSort").onclick=sortThemes;
- // Weiter-Knopf passt sich dem Fuellstand an
  var nextLabel=(SW.material&&SW.material.verdict==="zu_wenig")?"Trotzdem weiter \u2192 Gestaltung":"Weiter \u2192 Gestaltung";
  foot(b,2,nextLabel,function(){go(4);});
 }
 function adoptMaterial(text){SW.assets.push({kind:"text",name:"Eigene Erg\u00e4nzung",text:text});
- // als Thema spiegeln, damit es sichtbar wird
  SW.themes.push({title:text.length>42?text.slice(0,42)+"\u2026":text,note:"von dir erg\u00e4nzt",importance:"hoch"});
  var bb=$id("swRecheckMat");if(bb)busy(bb,true,"bewertet");
  assessMaterial().then(renderStep);
@@ -330,7 +409,6 @@ function step4(b){
  $id("swMood").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.mood.indexOf(v);if(k>=0)d.mood.splice(k,1);else d.mood.push(v);c.classList.toggle("on");};});
  $id("swInstr").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.instruments.indexOf(v);if(k>=0)d.instruments.splice(k,1);else d.instruments.push(v);c.classList.toggle("on");};});
  $id("swFeel").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){d.feel=c.getAttribute("data-v");$id("swFeel").querySelectorAll("[data-v]").forEach(function(x){x.classList.toggle("on",x===c);});};});
- // Zwei Wege: manuell weiter ODER Auto-Flow direkt bis zum gepruefter Songtext
  var auto=document.createElement("button");auto.className="btn sw-auto";auto.id="swAutoBtn";auto.textContent="\u2728 Automatisch bis zum Songtext";auto.onclick=function(){SW.auto=true;go(5);startAuto();};
  foot(b,3,"Weiter \u2192 Songtext",function(){SW.auto=false;go(5);},auto);
 }
