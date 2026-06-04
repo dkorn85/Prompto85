@@ -1,14 +1,12 @@
 /* Prompto85 — Therapeutisches Songwriting (Add-on)
  * Eigenstaendiges Modul wie prompto-guided.js: neuer Tab, spricht die App nur ueber das DOM/globale Funktionen an,
  * veraendert die bestehende Logik nicht. Eigenes IIFE -> ein Fehler hier kann index.html nicht brechen.
- * Flow: Begruessung+Richtung -> Assets lesen -> Themen-Mindmap (nach Wichtigkeit sortiert) ->
- *       Gestaltung (Takt/Rhythmus/Tonart/Stimmung/Instrumente/Genre/Songschema) ->
- *       Co-Writing Songtext mit Lektor-Evaluierung + Abschnitts-Kontrolle + Freigabe-Gate ->
- *       formatierter Suno-Textprompt + Styleprompt (kopierbar).
+ * Flow: Begruessung+Richtung -> Assets lesen -> Themen-Mindmap + MATERIALBEWERTUNG (Fuellstand %) ->
+ *       Gestaltung -> Co-Writing Songtext (Lektor + Wortlaut-Treue + Freigabe-Gate) -> Suno-Prompts.
  * Einbau: <script src="prompto-songwriter.js"></script> direkt vor </body> in index.html.
  * Haltung: kreativer Begleiter, KEIN Therapieersatz. Bei Krise behutsam zu echter Hilfe leiten.
- * v3 UX: Zugaenglichkeit im Fokus - auto-wachsende Textfelder (kein Abschneiden), groessere Schrift,
- *        44px Touch-Targets, farbcodierte Abschnittskarten, ruhigeres breiteres Overlay.
+ * v4: Materialbewertung+Fuellstand (SW_MATERIAL), Ergaenzungs-Vorschlaege, Wortlaut-Treue (jeder Vers
+ *     repraesentiert das Material), Session-Reset oben, Auto-Flow (Kette ohne Knopf-fuer-Knopf).
  */
 (function(){
 "use strict";
@@ -32,7 +30,7 @@ function wireGrow(scope){(scope||document).querySelectorAll(".sw-grow").forEach(
 /* ===== Persona + System-Prompts ===== */
 var P="You are the PROMPTO85 Songwriting Companion \u2014 a warm, gentle, emotionally intelligent co-writer for therapeutic songwriting. You help the user turn what moves them into a song. Be supportive and validating WITHOUT amplifying distress. You are NOT a therapist and do not diagnose; this is creative self-expression, not treatment. If the user expresses crisis, self-harm or suicidal thoughts, respond with genuine warmth, gently encourage them to reach out to someone they trust or professional support, and do NOT produce content that details or glorifies self-harm. Reply in GERMAN unless the user's material is clearly in another language. Keep a calm, caring, encouraging tone.";
 
-/* Strenge Lyrik-Qualitaetsregeln (gegen genau die Fehler aus dem ersten Ergebnis) */
+/* Strenge Lyrik-Qualitaetsregeln */
 var QUAL="STRICT LYRIC QUALITY RULES (the text must obey ALL of these): "+
 "1) NO clumsy word repetition: never repeat the same distinctive word within ~2 lines (e.g. avoid using \"Leere\" twice, \"ganzer\u2014ganzer\u2014ganz\", \"das wei\u00df ich, das wei\u00df ich\", \"bricht durch\u2026bricht durch\"). Deliberate refrain repetition and a chosen hook are allowed; lazy echoing is not. "+
 "2) NO forced or filler rhymes: never bend grammar or meaning just to make a rhyme; a slightly imperfect rhyme is better than a nonsensical line. Avoid pretentious filler words used only for rhyme (e.g. \"Aplomb\"). "+
@@ -41,16 +39,21 @@ var QUAL="STRICT LYRIC QUALITY RULES (the text must obey ALL of these): "+
 "5) SINGABLE: natural German stress, consistent line length per section, easy to sing, no tongue-twister consonant clusters. "+
 "6) Keep imagery concrete and personal over abstract sloganeering. Prefer plain honest language to grandiosity.";
 
+/* Wortlaut-Treue: jeder Vers soll das vorgegebene Material im genauen Wortlaut repraesentieren */
+var FIDELITY="MATERIAL FIDELITY (very important): The user's own MATERIAL (direction text, uploaded texts, the theme notes) is the heart of the song. Build the lyrics DIRECTLY from the user's own words and images. Where the user gave concrete wording, KEEP that wording verbatim inside the lines wherever it sings well, rather than paraphrasing it away. Each verse should map onto real material the user provided. Invent as little as possible \u2014 only add connective tissue where unavoidable, and keep any pure invention minimal and clearly in the user's spirit.";
+
 var SW_THEMES=P+" From the user's DIRECTION and any ASSETS (texts/images), sensitively surface the emotional THEMES that could become a song. Return ONLY JSON: {\"reflection_de\":\"1-2 warme deutsche Saetze, was du heraushoerst\",\"themes\":[{\"title_de\":\"kurzer Themen-Titel\",\"note_de\":\"1 Satz worum es geht\"}]}";
 var SW_SORT=P+" Given the THEMES with the user's own importance ratings, merge duplicates and sort by importance to the user (most important first). Keep the user's ratings. Return ONLY JSON: {\"themes\":[{\"title_de\":\"...\",\"note_de\":\"...\",\"importance\":\"hoch|mittel|niedrig\"}]}";
-var SW_LYRICS=P+" Write a complete, singable SONG TEXT in the user's language from the prioritised THEMES and the DESIGN choices (genre, mood, key, time signature, tempo/feel, instruments, structure schema). Honor the structure schema with clear section headings (Intro/Strophe/Pre-Refrain/Refrain/Bridge/Outro ...). Make the chorus memorable and the verses concrete and personal; authentic, hopeful where it fits, never clinical. "+QUAL+" Return ONLY JSON: {\"title_de\":\"Songtitel\",\"lyrics_de\":\"vollstaendiger Songtext mit Abschnitts-Ueberschriften\",\"note_de\":\"1 warmer Satz\"}";
-var SW_REFINE=P+" Revise the SONG TEXT according to the user's WISH. Keep what already works; change only what the wish asks for. "+QUAL+" Return ONLY JSON: {\"lyrics_de\":\"vollstaendiger ueberarbeiteter Songtext\"}";
 
-/* Lektor-Evaluierung: bewertet + ueberarbeitet automatisch. Gibt geprueftes Ergebnis + Befund zurueck. */
-var SW_EVAL=P+" You now act as a STRICT, honest LYRICS EDITOR (Lektor). Evaluate the SONG TEXT against the quality rules, then PRODUCE A CORRECTED VERSION that fixes every defect while preserving the song's meaning, structure (keep the same section headings) and the user's intent. "+QUAL+" Be tough: a real defect list, not flattery. Score 1-10 where 10 = flawless, singable, no repetition or forced rhymes, every line meaningful. Return ONLY JSON: {\"score\":N,\"issues_de\":[\"konkreter Mangel 1\",\"konkreter Mangel 2\"],\"summary_de\":\"1 Satz Gesamturteil\",\"lyrics_de\":\"vollstaendige KORRIGIERTE Fassung mit denselben Abschnitts-Ueberschriften\"}";
+/* Materialbewertung: wieviel echtes Material ist da vs. wieviel muesste die KI erfinden? */
+var SW_MATERIAL=P+" Assess how much REAL, usable raw material the user has provided (their DIRECTION text, uploaded ASSETS, and THEMES) versus how much you would have to INVENT to write an honest, personal song that genuinely represents them. Think in terms of: concrete details, names, images, events, feelings in the user's own words. A song needs enough specific material so that each verse can be grounded in something real. Return ONLY JSON: {\"fill_percent\":N (0-100, share of the song that can be grounded in the user's OWN material; 100 = plenty, nothing needs inventing),\"verdict\":\"ausreichend|knapp|zu_wenig\",\"assessment_de\":\"2-3 warme deutsche Saetze: was schon trägt und was fehlt\",\"suggestions\":[{\"q_de\":\"konkrete Frage oder Anregung, die fehlendes Material liefern wuerde\",\"hint_de\":\"1 kurzer Beispiel-Hinweis\"}]}";
 
-/* Abschnittsbezogene Aktion im Co-Writing */
-var SW_SECTION=P+" You are co-writing ONE SECTION of a song with the user. Given the FULL SONG (for context), the SECTION HEADING and its current TEXT, and an ACTION, rewrite ONLY that section. Keep it consistent with the rest of the song, the heading stays the same. ACTIONS: \"rewrite\"=fresh take, same meaning; \"imagery\"=more concrete vivid imagery, less abstraction; \"lessrhyme\"=loosen rhyme, prioritise meaning and natural speech; \"condense\"=tighten, remove filler, fewer/stronger lines; \"wish\"=follow the user's explicit wish text. "+QUAL+" Return ONLY JSON: {\"section_de\":\"nur der neue Abschnittstext OHNE Ueberschrift\"}";
+var SW_LYRICS=P+" Write a complete, singable SONG TEXT in the user's language from the prioritised THEMES and the DESIGN choices (genre, mood, key, time signature, tempo/feel, instruments, structure schema). Honor the structure schema with clear section headings (Intro/Strophe/Pre-Refrain/Refrain/Bridge/Outro ...). Make the chorus memorable and the verses concrete and personal; authentic, hopeful where it fits, never clinical. "+FIDELITY+" "+QUAL+" Return ONLY JSON: {\"title_de\":\"Songtitel\",\"lyrics_de\":\"vollstaendiger Songtext mit Abschnitts-Ueberschriften\",\"note_de\":\"1 warmer Satz\"}";
+var SW_REFINE=P+" Revise the SONG TEXT according to the user's WISH. Keep what already works; change only what the wish asks for. "+FIDELITY+" "+QUAL+" Return ONLY JSON: {\"lyrics_de\":\"vollstaendiger ueberarbeiteter Songtext\"}";
+
+var SW_EVAL=P+" You now act as a STRICT, honest LYRICS EDITOR (Lektor). Evaluate the SONG TEXT against the quality rules AND material fidelity, then PRODUCE A CORRECTED VERSION that fixes every defect while preserving the song's meaning, structure (keep the same section headings) and the user's intent. "+FIDELITY+" "+QUAL+" Be tough: a real defect list, not flattery. Score 1-10 where 10 = flawless, singable, no repetition or forced rhymes, every line meaningful and grounded in the user's material. Return ONLY JSON: {\"score\":N,\"issues_de\":[\"konkreter Mangel 1\",\"konkreter Mangel 2\"],\"summary_de\":\"1 Satz Gesamturteil\",\"lyrics_de\":\"vollstaendige KORRIGIERTE Fassung mit denselben Abschnitts-Ueberschriften\"}";
+
+var SW_SECTION=P+" You are co-writing ONE SECTION of a song with the user. Given the FULL SONG (for context), the SECTION HEADING and its current TEXT, and an ACTION, rewrite ONLY that section. Keep it consistent with the rest of the song, the heading stays the same. ACTIONS: \"rewrite\"=fresh take, same meaning; \"imagery\"=more concrete vivid imagery, less abstraction; \"lessrhyme\"=loosen rhyme, prioritise meaning and natural speech; \"condense\"=tighten, remove filler, fewer/stronger lines; \"wish\"=follow the user's explicit wish text. "+FIDELITY+" "+QUAL+" Return ONLY JSON: {\"section_de\":\"nur der neue Abschnittstext OHNE Ueberschrift\"}";
 
 var SW_SUNO=P+" Convert the final SONG TEXT into Suno format and write a Suno STYLE prompt. (1) suno_lyrics: take the user's lyrics and re-label every section with Suno meta tags in square brackets ([Intro],[Verse],[Pre-Chorus],[Chorus],[Bridge],[Outro],[Instrumental]) \u2014 keep the actual lyric lines, no commentary, no extra text. (2) suno_style: ONE concise comma-separated ENGLISH line for Suno's Style field, combining genre/sub-genre, mood, lead + backing instruments, tempo in BPM, time signature, key and vocal delivery. This is a VOCAL song \u2014 do NOT add 'no vocals'. Return ONLY JSON: {\"suno_lyrics\":\"...\",\"suno_style\":\"...\"}";
 
@@ -70,9 +73,10 @@ var SCHEMAS=[
 ];
 
 /* ===== Zustand ===== */
-var SW={step:1,direction:"",assets:[],themes:[],
- design:{genre:GENRES[0],mood:[],key:"egal",timesig:"4/4",bpm:84,feel:"straight",instruments:[],schema:SCHEMAS[0].v,schemaCustom:""},
- title:"",lyrics:"",sections:[],eval:null,approved:false,suno_lyrics:"",suno_style:""};
+function freshState(){return {step:1,direction:"",assets:[],themes:[],material:null,_reflection:"",
+ design:{genre:GENRES[0],mood:[],key:"egal",timesig:"4/4",bpm:84,feel:"straight",instruments:[],schema:SCHEMAS[0].v,schemaCustom:"",instrCustom:""},
+ title:"",lyrics:"",sections:[],eval:null,approved:false,suno_lyrics:"",suno_style:"",auto:false};}
+var SW=freshState();
 try{var s=localStorage.getItem("sw_step");if(s)SW.step=Math.min(6,Math.max(1,parseInt(s,10)||1));}catch(e){}
 
 /* ===== Styles ===== */
@@ -84,7 +88,10 @@ function injectCSS(){
  ".sw-ov.open{display:flex}",
  ".sw-box{background:#fff;max-width:860px;width:100%;border-radius:20px;padding:20px 22px 26px;box-shadow:0 24px 70px rgba(0,0,0,.3)}",
  "@media(max-width:680px){.sw-box{padding:16px 14px 22px;border-radius:16px}}",
- ".sw-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}",
+ ".sw-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}",
+ ".sw-top-r{display:flex;align-items:center;gap:8px}",
+ ".sw-reset{border:1px solid var(--line);background:#fff;border-radius:9px;height:38px;padding:0 12px;cursor:pointer;font-size:12.5px;font-family:var(--body);color:var(--sub);font-weight:600}",
+ ".sw-reset:hover{background:#fdecec;border-color:#f3b4b4;color:#a11}",
  ".sw-x{border:none;background:#eee;border-radius:9px;width:38px;height:38px;cursor:pointer;font-size:17px}",
  ".sw-rail{display:flex;gap:5px;margin:10px 0 16px}",
  ".sw-seg{flex:1;height:6px;border-radius:99px;background:#e5e5ea}.sw-seg.done{background:#34c759}.sw-seg.cur{background:#7b61ff}",
@@ -99,6 +106,25 @@ function injectCSS(){
  ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);border-radius:13px;padding:13px;margin-top:10px}",
  ".sw-imp{display:flex;gap:6px}.sw-imp .chip{padding:8px 12px;font-size:12.5px;min-height:38px}",
  ".sw-asset{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border-radius:10px;padding:9px 12px;font-size:13px;margin:7px 7px 0 0}",
+ /* --- Materialbewertung / Fuellstand --- */
+ ".sw-fill{border-radius:14px;padding:15px 16px;margin-top:14px;border:1px solid var(--line2)}",
+ ".sw-fill.good{background:#eafaef;border-color:#b7e4c5}",
+ ".sw-fill.mid{background:#fff6e6;border-color:#f0d9a8}",
+ ".sw-fill.bad{background:#fdecec;border-color:#f3b4b4}",
+ ".sw-fill-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}",
+ ".sw-fill-pct{font-size:26px;font-weight:800;letter-spacing:-.02em}",
+ ".sw-fill-lbl{font-size:13px;font-weight:700}",
+ ".sw-bar{height:14px;border-radius:99px;background:rgba(0,0,0,.07);overflow:hidden}",
+ ".sw-bar-fill{height:100%;border-radius:99px;transition:width .5s ease}",
+ ".sw-fill.good .sw-bar-fill{background:linear-gradient(90deg,#34c759,#28a74a)}",
+ ".sw-fill.mid .sw-bar-fill{background:linear-gradient(90deg,#f0b400,#e08e3c)}",
+ ".sw-fill.bad .sw-bar-fill{background:linear-gradient(90deg,#ff8d70,#d70015)}",
+ ".sw-fill-txt{font-size:13.5px;line-height:1.6;margin-top:10px}",
+ ".sw-sugg{border:1px solid var(--line2);border-radius:12px;padding:12px 13px;margin-top:9px;background:#fff;cursor:pointer;display:flex;gap:10px;align-items:flex-start}",
+ ".sw-sugg:hover{border-color:#7b61ff;box-shadow:0 0 0 3px rgba(123,97,255,.10)}",
+ ".sw-sugg .plus{font-size:18px;color:#7b61ff;font-weight:800;line-height:1.3}",
+ ".sw-sugg b{font-size:13.5px}.sw-sugg .hint{font-size:12px;color:var(--sub);margin-top:2px;line-height:1.45}",
+ ".sw-addbox{margin-top:10px;display:flex;gap:8px;align-items:stretch}",
  /* --- Co-Writing Abschnittskarten --- */
  ".sw-secwrap{margin-top:6px}",
  ".sw-sec{position:relative;border:1px solid var(--line2);border-radius:14px;padding:14px 15px 13px;margin-top:14px;background:#fff;border-left:5px solid #c9c9d4}",
@@ -122,7 +148,9 @@ function injectCSS(){
  ".sw-gate{display:flex;align-items:center;gap:9px;border-radius:12px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5;font-weight:600}",
  ".sw-gate.locked{background:#fff6e6;color:#8a5a12;border:1px solid #f0d9a8}",
  ".sw-gate.open{background:#eafaef;color:#1a7f37;border:1px solid #b7e4c5}",
- ".sw-hint{font-size:12.5px;color:var(--sub);margin-top:7px;line-height:1.5}"
+ ".sw-hint{font-size:12.5px;color:var(--sub);margin-top:7px;line-height:1.5}",
+ ".sw-auto{background:linear-gradient(135deg,#7b61ff,#d65db1)!important;color:#fff!important}",
+ ".sw-stepmsg{display:flex;align-items:center;gap:9px;background:#f4f1ff;border-radius:11px;padding:12px 14px;font-size:13.5px;color:#3a2a6b;margin-top:12px}"
  ].join("\n");
  document.head.appendChild(st);
 }
@@ -131,11 +159,13 @@ function injectCSS(){
 function ensureOverlay(){
  if($id("swOv"))return;
  var ov=document.createElement("div");ov.id="swOv";ov.className="sw-ov";
- ov.innerHTML='<div class="sw-box"><div class="sw-top"><b style="font-size:17px">\ud83c\udfb5 Therapeutisches Songwriting</b><button class="sw-x" id="swX" aria-label="schlie\u00dfen">\u2715</button></div><div class="sw-rail" id="swRail"></div><div id="swBody"></div></div>';
+ ov.innerHTML='<div class="sw-box"><div class="sw-top"><b style="font-size:17px">\ud83c\udfb5 Therapeutisches Songwriting</b><div class="sw-top-r"><button class="sw-reset" id="swReset" title="Session zur\u00fccksetzen">\u21bb Neu</button><button class="sw-x" id="swX" aria-label="schlie\u00dfen">\u2715</button></div></div><div class="sw-rail" id="swRail"></div><div id="swBody"></div></div>';
  document.body.appendChild(ov);
  ov.addEventListener("click",function(e){if(e.target===ov)close();});
  $id("swX").onclick=close;
+ $id("swReset").onclick=resetSession;
 }
+function resetSession(){if(!confirm("Ganze Songwriting-Session zur\u00fccksetzen und bei 0 beginnen?"))return;SW=freshState();try{localStorage.setItem("sw_step","1");}catch(e){}renderStep();}
 function rail(){var r=$id("swRail");if(!r)return;var h="";for(var i=1;i<=6;i++){h+='<div class="sw-seg'+(i<SW.step?" done":"")+(i===SW.step?" cur":"")+'"></div>';}r.innerHTML=h;}
 function open(step){injectCSS();ensureOverlay();if(step)SW.step=step;$id("swOv").classList.add("open");renderStep();}
 function close(){var o=$id("swOv");if(o)o.classList.remove("open");}
@@ -149,7 +179,6 @@ function foot(b,backStep,nextLabel,nextFn,extra){var f=document.createElement("d
 function chips(arr,sel,multi){return arr.map(function(v){var on=multi?(sel.indexOf(v)>=0):(sel===v);return '<button type="button" class="chip'+(on?" on":"")+'" data-v="'+esc(v)+'">'+esc(v)+'</button>';}).join("");}
 
 /* ===== Lyrics <-> Sections ===== */
-/* zerlegt "[Heading]\nzeilen..." in [{head,body}]; Zeilen vor erster Heading -> head "" */
 function lyricsToSections(txt){var lines=(txt||"").split(/\r?\n/);var secs=[],cur=null;
  lines.forEach(function(ln){var m=ln.match(/^\s*[\[\(]?\s*(Intro|Strophe|Verse|Pre-?Refrain|Pre-?Chorus|Refrain|Chorus|Bridge|Br\u00fccke|Outro|Hook|Kehrvers|Interlude|Solo)\b[^\]\)]*[\]\)]?\s*$/i);
   if(m){cur={head:ln.trim(),body:[]};secs.push(cur);}
@@ -158,7 +187,6 @@ function lyricsToSections(txt){var lines=(txt||"").split(/\r?\n/);var secs=[],cu
 function sectionsToLyrics(secs){return secs.map(function(s){return (s.head?s.head+"\n":"")+s.body;}).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();}
 function syncSectionsFromLyrics(){SW.sections=lyricsToSections(SW.lyrics);}
 function syncLyricsFromSections(){SW.lyrics=sectionsToLyrics(SW.sections);}
-/* Typ + lesbares Label aus Heading */
 function secType(head){var h=(head||"").toLowerCase();
  if(/refrain|chorus|hook|kehrvers/.test(h))return "chorus";
  if(/bridge|br\u00fccke/.test(h))return "bridge";
@@ -186,18 +214,20 @@ function step1(b){
 
 /* Schritt 2 — Assets */
 function step2(b){
- b.innerHTML='<div class="sw-h">Schritt 2 \u00b7 Material hinzuf\u00fcgen (optional)</div>'+
- '<div class="sw-help">Leg gern Bilder, Notizen, Tagebuch- oder Textdateien dazu \u2013 alles, was die KI lesen kann. Sie h\u00f6rt sensibel heraus, welche Themen und Gef\u00fchle darin stecken, und macht daraus Roh-Material f\u00fcr deinen Songtext. Du kannst auch ohne Material weitermachen.</div>'+
+ b.innerHTML='<div class="sw-h">Schritt 2 \u00b7 Material hinzuf\u00fcgen</div>'+
+ '<div class="sw-help">Leg gern Bilder, Notizen, Tagebuch- oder Textdateien dazu \u2013 alles, was die KI lesen kann. Je mehr von <b>dir</b> dabei ist, desto mehr wird der Song wirklich deiner: jeder Vers soll dein Material widerspiegeln. Danach pr\u00fcft die KI, ob das Material ausreicht.</div>'+
  '<div class="drop" id="swDrop">Bilder / Textdateien ablegen oder tippen</div><input type="file" id="swFile" accept="image/*,text/*,.txt,.md,.csv,.json,.srt,.rtf,.log,.lrc" multiple hidden/>'+
  '<div id="swAssets">'+assetList()+'</div>'+
- '<button class="btn" id="swExtract" style="margin-top:14px;min-height:48px">\u2728 Themen heraush\u00f6ren</button><div id="swThemesOut" class="x-err"></div>';
+ '<button class="btn" id="swExtract" style="margin-top:14px;min-height:50px">\u2728 Themen heraush\u00f6ren &amp; Material pr\u00fcfen</button>'+
+ '<div class="sw-hint">L\u00e4uft in einem Zug: Themen + Materialbewertung. Du kannst danach erg\u00e4nzen.</div>'+
+ '<div id="swThemesOut" class="x-err"></div>';
  var z=$id("swDrop"),f=$id("swFile");
  z.onclick=function(){f.click();};
  ["dragover","dragenter"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.add("hot");});});
  ["dragleave","drop"].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.remove("hot");});});
  z.addEventListener("drop",function(e){addAssets([].slice.call(e.dataTransfer.files));});
  f.onchange=function(e){addAssets([].slice.call(e.target.files));};
- $id("swExtract").onclick=extractThemes;
+ $id("swExtract").onclick=function(){extractThemes(true);};
  foot(b,1,"Weiter \u2192 Themen",function(){go(3);});
 }
 function assetList(){if(!SW.assets.length)return"";return SW.assets.map(function(a,i){return '<span class="sw-asset">'+(a.kind==="image"?"\ud83d\uddbc":"\ud83d\udcc4")+' '+esc(a.name)+' <button class="cp" data-del="'+i+'" style="color:#a11">\u2715</button></span>';}).join("");}
@@ -210,28 +240,65 @@ function addAssets(files){var ps=files.map(function(f){
  Promise.all(ps).then(refreshAssets);
 }
 function assetBlocks(){var out=[];SW.assets.forEach(function(a){if(a.kind==="image"){var ib=imgBlock(a.data);if(ib)out.push(ib);}else if(a.kind==="text"){out.push({type:"text",text:"DATEI \u201e"+a.name+"\u201c:\n"+a.text});}});return out;}
-function extractThemes(){var btn=$id("swExtract");busy(btn,true,"h\u00f6rt zu");$id("swThemesOut").textContent="";
- var content=assetBlocks();content.push({type:"text",text:"RICHTUNG DES NUTZERS: "+(SW.direction||"(frei)")+"\n\nH\u00f6re die Themen heraus."});
- claude([{role:"user",content:content}],SW_THEMES,1600).then(function(txt){var j=parseJSON(txt);
-  (j.themes||[]).forEach(function(t){SW.themes.push({title:t.title_de||"",note:t.note_de||"",importance:"mittel"});});
-  SW._reflection=j.reflection_de||"";go(3);
- }).catch(function(e){$id("swThemesOut").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php). Du kannst Themen auch im n\u00e4chsten Schritt selbst eintragen.";busy(btn,false);});
-}
+/* materialText: alles in Worten des Nutzers fuer Bewertung & Wortlaut-Treue */
+function materialText(){var parts=[];if(SW.direction)parts.push("RICHTUNG (Wortlaut des Nutzers):\n"+SW.direction);
+ SW.assets.forEach(function(a){if(a.kind==="text")parts.push("TEXT \u201e"+a.name+"\u201c (Wortlaut):\n"+a.text);else if(a.kind==="image")parts.push("BILD: "+a.name);});
+ if(SW.themes.length)parts.push("THEMEN:\n"+SW.themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n"));
+ return parts.join("\n\n");}
 
-/* Schritt 3 — Themen-Mindmap */
+/* Themen heraushoeren -> dann (verkettet) Materialbewertung, dann nach Schritt 3 */
+function extractThemes(chain){var btn=$id("swExtract");busy(btn,true,"h\u00f6rt zu");if($id("swThemesOut"))$id("swThemesOut").textContent="";
+ var content=assetBlocks();content.push({type:"text",text:"RICHTUNG DES NUTZERS: "+(SW.direction||"(frei)")+"\n\nH\u00f6re die Themen heraus."});
+ return claude([{role:"user",content:content}],SW_THEMES,1600).then(function(txt){var j=parseJSON(txt);
+  SW.themes=[];(j.themes||[]).forEach(function(t){SW.themes.push({title:t.title_de||"",note:t.note_de||"",importance:"mittel"});});
+  SW._reflection=j.reflection_de||"";
+  return assessMaterial();
+ }).then(function(){go(3);}).catch(function(e){if($id("swThemesOut"))$id("swThemesOut").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php). Du kannst Themen auch im n\u00e4chsten Schritt selbst eintragen.";busy(btn,false);});
+}
+/* reine Materialbewertung (auch nachtraeglich aufrufbar) */
+function assessMaterial(){return claude([{role:"user",content:"MATERIAL DES NUTZERS:\n"+materialText()}],SW_MATERIAL,1500).then(function(txt){var j=parseJSON(txt);
+  var pct=Math.max(0,Math.min(100,parseInt(j.fill_percent,10)||0));
+  SW.material={pct:pct,verdict:j.verdict||(pct>=70?"ausreichend":pct>=45?"knapp":"zu_wenig"),assessment:j.assessment_de||"",suggestions:(j.suggestions||[]).slice(0,5)};
+ }).catch(function(e){SW.material={pct:0,verdict:"zu_wenig",assessment:"Materialpr\u00fcfung nicht m\u00f6glich ("+e.message+").",suggestions:[]};});}
+
+/* ===== Schritt 3 — Themen + Materialbewertung ===== */
+function fillClass(){var v=SW.material?SW.material.verdict:"";return v==="ausreichend"?"good":(v==="knapp"?"mid":"bad");}
+function fillLabel(){var v=SW.material?SW.material.verdict:"";return v==="ausreichend"?"\u2705 Material reicht f\u00fcr einen authentischen Text":(v==="knapp"?"\u26a0 Knapp \u2013 etwas m\u00fcsste die KI erg\u00e4nzen":"\u26d4 Zu wenig \u2013 die KI m\u00fcsste viel erfinden");}
+function materialHTML(){if(!SW.material)return"";var m=SW.material,c=fillClass();
+ var sug=(m.suggestions||[]).map(function(s,i){return '<div class="sw-sugg" data-sug="'+i+'"><div class="plus">+</div><div><b>'+esc(s.q_de||"")+'</b>'+(s.hint_de?'<div class="hint">'+esc(s.hint_de)+'</div>':'')+'</div></div>';}).join("");
+ var sugBlock=(m.verdict!=="ausreichend"&&sug)?'<div style="margin-top:12px"><div class="tag">So machst du den Song noch mehr zu deinem \u2013 tippe zum \u00dcbernehmen:</div>'+sug+
+   '<div class="sw-addbox"><input class="sw-in" id="swAddMat" placeholder="\u2026oder eigenes Material/Detail hier eintippen"/><button class="btn sec" id="swAddMatBtn" style="width:auto;padding:12px 16px;min-height:48px">+ erg\u00e4nzen</button></div>'+
+   '<button class="btn sec" id="swRecheckMat" style="margin-top:10px;min-height:46px">\u21bb Material neu bewerten</button></div>':"";
+ return '<div class="sw-fill '+c+'"><div class="sw-fill-top"><span class="sw-fill-pct">'+m.pct+'%</span><span class="sw-fill-lbl">'+fillLabel()+'</span></div>'+
+  '<div class="sw-bar"><div class="sw-bar-fill" style="width:'+m.pct+'%"></div></div>'+
+  (m.assessment?'<div class="sw-fill-txt">'+esc(m.assessment)+'</div>':"")+sugBlock+'</div>';
+}
 function step3(b){
  var refl=SW._reflection?'<div class="expl">'+esc(SW._reflection)+'</div>':"";
  var list=SW.themes.length?SW.themes.map(function(t,i){return '<div class="sw-theme"><div><b>'+esc(t.title||("Thema "+(i+1)))+'</b><div class="small">'+esc(t.note||"")+'</div></div><div class="sw-imp" data-i="'+i+'">'+
    ["hoch","mittel","niedrig"].map(function(v){return '<button type="button" class="chip'+(t.importance===v?" on":"")+'" data-imp="'+v+'">'+v+'</button>';}).join("")+'</div></div>';}).join(""):'<div class="small">Noch keine Themen \u2013 trag unten dein erstes ein.</div>';
- b.innerHTML='<div class="sw-h">Schritt 3 \u00b7 Deine Themen \u2013 wie eine Mindmap</div>'+
- '<div class="sw-help">Das sind die Themen, die wir heraush\u00f6ren. Markiere bei jedem, wie <b>wichtig</b> es dir ist. Die KI sortiert dann nach deiner Gewichtung \u2013 das Wichtigste tr\u00e4gt den Song. Du kannst eigene Themen erg\u00e4nzen.</div>'+
- refl+'<div id="swThemeList">'+list+'</div>'+
+ b.innerHTML='<div class="sw-h">Schritt 3 \u00b7 Themen &amp; Material-F\u00fcllstand</div>'+
+ '<div class="sw-help">Der <b>F\u00fcllstand</b> zeigt, wie viel vom Song aus <b>deinem eigenen Material</b> getragen werden kann. Ist er hoch, kann es direkt losgehen. Ist er niedrig, m\u00fcsste die KI viel erfinden \u2013 dann erg\u00e4nze unten gern noch etwas. Markiere bei jedem Thema, wie wichtig es dir ist.</div>'+
+ materialHTML()+
+ '<div class="sw-field"><span class="tag" style="margin-top:6px">Deine Themen</span><div id="swThemeList">'+list+'</div></div>'+
  '<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Eigenes Thema</span><input class="sw-in" id="swNewTheme" placeholder="Was geh\u00f6rt noch rein?"/></div><button class="btn sec" id="swAddTheme" style="width:auto;padding:12px 16px;min-height:48px">+ Hinzuf\u00fcgen</button></div>'+
- '<button class="btn" id="swSort" style="margin-top:14px;min-height:48px">\u2728 Nach Wichtigkeit sortieren</button><div id="swSortErr" class="x-err"></div>';
+ '<button class="btn sec" id="swSort" style="margin-top:14px;min-height:46px">\u2728 Themen nach Wichtigkeit sortieren</button><div id="swSortErr" class="x-err"></div>';
  wireThemes();
+ // Material-Vorschlaege uebernehmen
+ b.querySelectorAll("[data-sug]").forEach(function(card){card.onclick=function(){var s=SW.material.suggestions[+card.getAttribute("data-sug")];if(!s)return;var ans=prompt(s.q_de||"Dein Detail:",""); if(ans&&ans.trim()){adoptMaterial((s.q_de?s.q_de+" \u2014 ":"")+ans.trim());}};});
+ if($id("swAddMatBtn"))$id("swAddMatBtn").onclick=function(){var v=$id("swAddMat").value.trim();if(v)adoptMaterial(v);};
+ if($id("swRecheckMat"))$id("swRecheckMat").onclick=function(){var bb=$id("swRecheckMat");busy(bb,true,"bewertet");assessMaterial().then(renderStep);};
  $id("swAddTheme").onclick=function(){var v=$id("swNewTheme").value.trim();if(v){SW.themes.push({title:v,note:"",importance:"hoch"});renderStep();}};
  $id("swSort").onclick=sortThemes;
- foot(b,2,"Weiter \u2192 Gestaltung",function(){go(4);});
+ // Weiter-Knopf passt sich dem Fuellstand an
+ var nextLabel=(SW.material&&SW.material.verdict==="zu_wenig")?"Trotzdem weiter \u2192 Gestaltung":"Weiter \u2192 Gestaltung";
+ foot(b,2,nextLabel,function(){go(4);});
+}
+function adoptMaterial(text){SW.assets.push({kind:"text",name:"Eigene Erg\u00e4nzung",text:text});
+ // als Thema spiegeln, damit es sichtbar wird
+ SW.themes.push({title:text.length>42?text.slice(0,42)+"\u2026":text,note:"von dir erg\u00e4nzt",importance:"hoch"});
+ var bb=$id("swRecheckMat");if(bb)busy(bb,true,"bewertet");
+ assessMaterial().then(renderStep);
 }
 function wireThemes(){document.querySelectorAll("#swThemeList .sw-imp").forEach(function(row){var i=+row.getAttribute("data-i");row.querySelectorAll("[data-imp]").forEach(function(btn){btn.onclick=function(){SW.themes[i].importance=btn.getAttribute("data-imp");renderStep();};});});}
 function sortThemes(){var btn=$id("swSort");busy(btn,true,"sortiert");$id("swSortErr").textContent="";
@@ -263,7 +330,9 @@ function step4(b){
  $id("swMood").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.mood.indexOf(v);if(k>=0)d.mood.splice(k,1);else d.mood.push(v);c.classList.toggle("on");};});
  $id("swInstr").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.instruments.indexOf(v);if(k>=0)d.instruments.splice(k,1);else d.instruments.push(v);c.classList.toggle("on");};});
  $id("swFeel").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){d.feel=c.getAttribute("data-v");$id("swFeel").querySelectorAll("[data-v]").forEach(function(x){x.classList.toggle("on",x===c);});};});
- foot(b,3,"Weiter \u2192 Songtext",function(){go(5);});
+ // Zwei Wege: manuell weiter ODER Auto-Flow direkt bis zum gepruefter Songtext
+ var auto=document.createElement("button");auto.className="btn sw-auto";auto.id="swAutoBtn";auto.textContent="\u2728 Automatisch bis zum Songtext";auto.onclick=function(){SW.auto=true;go(5);startAuto();};
+ foot(b,3,"Weiter \u2192 Songtext",function(){SW.auto=false;go(5);},auto);
 }
 function designSummary(){var d=SW.design;var instr=d.instruments.concat((d.instrCustom||"").split(",").map(function(x){return x.trim();}).filter(Boolean));
  return "Genre: "+d.genre+"\nStimmung: "+(d.mood.join(", ")||"offen")+"\nTonart: "+d.key+"\nTakt: "+d.timesig+"\nTempo: "+d.bpm+" BPM ("+d.feel+")\nInstrumente: "+(instr.join(", ")||"offen")+"\nSongschema: "+((d.schema==="" ? (d.schemaCustom||"frei") : d.schema));}
@@ -271,14 +340,20 @@ function designSummary(){var d=SW.design;var instr=d.instruments.concat((d.instr
 /* ===== Schritt 5 — Co-Writing Songtext ===== */
 function evalClass(){if(!SW.eval)return"";var s=SW.eval.score||0;return s>=8?"good":(s>=6?"mid":"bad");}
 function evalHTML(){if(!SW.eval)return"";var c=evalClass();var iss=(SW.eval.issues_de||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join("");
- return '<div class="sw-eval '+c+'"><div><span class="sw-score">Lektor: '+esc(String(SW.eval.score||"?"))+'/10</span> \u00b7 '+esc(SW.eval.summary_de||"")+'</div>'+(iss?'<ul>'+iss+'</ul>':"")+'<div class="sw-hint" style="margin-top:8px">Die angezeigte Fassung ist bereits die vom Lektor korrigierte Version.</div></div>';}
+ return '<div class="sw-eval '+c+'"><div><span class="sw-score">Lektor: '+esc(String(SW.eval.score||"?"))+'/10</span> \u00b7 '+esc(SW.eval.summary_de||"")+'</div>'+(iss?'<ul>'+iss+'</ul>':"")+'<div class="sw-hint" style="margin-top:8px">Die angezeigte Fassung ist bereits die vom Lektor korrigierte Version \u2013 nah an deinem Material.</div></div>';}
 function step5(b){
  var has=!!(SW.lyrics&&SW.sections.length);
  var html='<div class="sw-h">Schritt 5 \u00b7 Co-Writing \u2013 euer Songtext</div>'+
-  '<div class="sw-help">Hier hast du die volle Kontrolle. Die KI schreibt einen Entwurf, ein strenger <b>Lektor</b> pr\u00fcft ihn automatisch (Wortwiederholungen, Zwangsreime, Sinn, Singbarkeit) und korrigiert. Danach kannst du <b>jeden Abschnitt einzeln</b> bearbeiten \u2013 direkt im Textfeld oder per Knopf. Erst wenn du zufrieden bist, gibst du den Text frei.</div>';
+  '<div class="sw-help">Die KI baut den Text aus <b>deinem Material</b>, ein strenger <b>Lektor</b> pr\u00fcft automatisch (Wortwiederholungen, Zwangsreime, Sinn, Singbarkeit, N\u00e4he zu deinem Material) und korrigiert. Danach kannst du <b>jeden Abschnitt einzeln</b> bearbeiten. Erst wenn du zufrieden bist, gibst du den Text frei.</div>';
+ if(SW.auto){
+  html+='<div class="sw-stepmsg"><span class="spin" style="border-top-color:#7b61ff"></span> <span id="swAutoMsg">Automatik l\u00e4uft \u2026</span></div><div id="swLyrErr" class="x-err"></div>';
+  b.innerHTML=html;
+  return;
+ }
  if(!has){
-  html+='<button class="btn" id="swWrite" style="min-height:50px">\u2728 Ersten Entwurf schreiben (mit Lektor-Pr\u00fcfung)</button><div id="swLyrErr" class="x-err"></div>';
-  b.innerHTML=html;$id("swWrite").onclick=writeLyrics;
+  html+='<button class="btn" id="swWrite" style="min-height:50px">\u2728 Songtext schreiben (mit Lektor-Pr\u00fcfung)</button>'+
+        '<div class="sw-hint">Schreiben und Pr\u00fcfen laufen automatisch hintereinander \u2013 ein Klick gen\u00fcgt.</div><div id="swLyrErr" class="x-err"></div>';
+  b.innerHTML=html;$id("swWrite").onclick=function(){writeLyrics();};
   foot(b,4,"Weiter \u2192 Suno-Prompts",function(){gateNext();});
   return;
  }
@@ -305,7 +380,6 @@ function step5(b){
  b.innerHTML=html;
 
  if($id("swTitle"))$id("swTitle").oninput=function(e){SW.title=e.target.value;};
- // Abschnitts-Textfelder: bei Eingabe Lyrics aktualisieren + Freigabe zuruecksetzen
  b.querySelectorAll("[data-body]").forEach(function(ta){ta.addEventListener("input",function(){var i=+ta.getAttribute("data-body");SW.sections[i].body=ta.value;syncLyricsFromSections();invalidate();});});
  b.querySelectorAll("[data-act]").forEach(function(btn){btn.onclick=function(){sectionAction(+btn.getAttribute("data-i"),btn.getAttribute("data-act"),btn);};});
  $id("swRefine").onclick=refineLyrics;
@@ -318,36 +392,48 @@ function step5(b){
 function invalidate(){SW.approved=false;var g=$id("swGate");if(g){g.className="sw-gate locked";g.innerHTML='\ud83d\udd12 Text ge\u00e4ndert \u2013 bitte erneut pr\u00fcfen und freigeben.';}var ap=$id("swApprove");if(ap)ap.textContent="\u2713 Songtext freigeben";}
 function gateNext(){if(!SW.approved){var g=$id("swGate");if(g){g.className="sw-gate locked";g.innerHTML='\u26a0 Bitte zuerst auf \u201e\u2713 Songtext freigeben\u201c tippen.';}return;}go(6);}
 
-/* erster Entwurf -> danach Lektor */
+/* Auto-Flow: schreibt -> Lektor, ohne Zwischenklicks; haelt im Co-Writing an */
+function startAuto(){var msg=function(t){var m=$id("swAutoMsg");if(m)m.textContent=t;};
+ msg("Schreibe Songtext aus deinem Material \u2026");
+ var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
+ var payload="MATERIAL (Wortlaut des Nutzers \u2014 nutze es direkt):\n"+materialText()+"\n\nTHEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
+ claude([{role:"user",content:payload}],SW_LYRICS,2600).then(function(txt){var j=parseJSON(txt);SW.title=j.title_de||SW.title||"";SW.lyrics=j.lyrics_de||"";
+  msg("Lektor pr\u00fcft und feilt \u2026");
+  var ep="DESIGN:\n"+designSummary()+"\n\nMATERIAL DES NUTZERS (auf N\u00e4he pr\u00fcfen):\n"+materialText()+"\n\nSONG TEXT:\n"+SW.lyrics;
+  return claude([{role:"user",content:ep}],SW_EVAL,3000);
+ }).then(function(txt){var j=parseJSON(txt);if(j.lyrics_de)SW.lyrics=j.lyrics_de;SW.eval={score:j.score,issues_de:j.issues_de||[],summary_de:j.summary_de||""};SW.approved=false;SW.auto=false;syncSectionsFromLyrics();renderStep();
+ }).catch(function(e){SW.auto=false;if(SW.lyrics){syncSectionsFromLyrics();}renderStep();var le=$id("swLyrErr");if(le)le.textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";});
+}
+
+/* manueller erster Entwurf -> danach Lektor (verkettet) */
 function writeLyrics(){var btn=$id("swWrite");busy(btn,true,"schreibt");if($id("swLyrErr"))$id("swLyrErr").textContent="";
  var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
- var payload="THEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
+ var payload="MATERIAL (Wortlaut des Nutzers \u2014 nutze es direkt):\n"+materialText()+"\n\nTHEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
  claude([{role:"user",content:payload}],SW_LYRICS,2600).then(function(txt){var j=parseJSON(txt);SW.title=j.title_de||SW.title||"";SW.lyrics=j.lyrics_de||"";
   return runEval(btn,null);
  }).catch(function(e){if($id("swLyrErr"))$id("swLyrErr").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
 }
 
-/* Lektor-Pass: bewertet + ersetzt Lyrics durch korrigierte Fassung, zeigt Befund */
+/* Lektor-Pass */
 function runEval(spinBtn,recheckBtn){var rb=recheckBtn;if(rb)busy(rb,true,"pr\u00fcft");
- var payload="DESIGN:\n"+designSummary()+"\n\nSONG TEXT:\n"+SW.lyrics;
+ var payload="DESIGN:\n"+designSummary()+"\n\nMATERIAL DES NUTZERS (auf N\u00e4he pr\u00fcfen):\n"+materialText()+"\n\nSONG TEXT:\n"+SW.lyrics;
  return claude([{role:"user",content:payload}],SW_EVAL,3000).then(function(txt){var j=parseJSON(txt);
   if(j.lyrics_de)SW.lyrics=j.lyrics_de;
   SW.eval={score:j.score,issues_de:j.issues_de||[],summary_de:j.summary_de||""};
   SW.approved=false;syncSectionsFromLyrics();renderStep();
  }).catch(function(e){if(rb)busy(rb,false);if(spinBtn)busy(spinBtn,false);alert("\u26a0 Lektor: "+e.message+" \u2014 Backend pr\u00fcfen (api.php).");
-  // Fallback: wenigstens den ungeprueften Text anzeigen
   if(SW.lyrics){syncSectionsFromLyrics();renderStep();}
  });
 }
 
-/* Gesamt-Wunsch -> Refine -> danach erneut Lektor */
+/* Gesamt-Wunsch -> Refine -> erneut Lektor */
 function refineLyrics(){var wish=$id("swWish").value.trim();if(!wish)return;var btn=$id("swRefine");busy(btn,true,"\u00fcberarbeitet");
- claude([{role:"user",content:"SONG TEXT:\n"+SW.lyrics+"\n\nWISH: "+wish}],SW_REFINE,2600).then(function(txt){var j=parseJSON(txt);if(j.lyrics_de)SW.lyrics=j.lyrics_de;return runEval(btn,null);}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
+ claude([{role:"user",content:"MATERIAL DES NUTZERS:\n"+materialText()+"\n\nSONG TEXT:\n"+SW.lyrics+"\n\nWISH: "+wish}],SW_REFINE,2600).then(function(txt){var j=parseJSON(txt);if(j.lyrics_de)SW.lyrics=j.lyrics_de;return runEval(btn,null);}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
 }
 
-/* Abschnitts-Aktion (rewrite/imagery/lessrhyme/condense) */
+/* Abschnitts-Aktion */
 function sectionAction(i,act,btn){var s=SW.sections[i];if(!s)return;busy(btn,true,"\u2026");
- var payload="FULL SONG:\n"+SW.lyrics+"\n\nSECTION HEADING: "+(s.head||"(ohne)")+"\nSECTION TEXT:\n"+s.body+"\n\nACTION: "+act;
+ var payload="MATERIAL DES NUTZERS:\n"+materialText()+"\n\nFULL SONG:\n"+SW.lyrics+"\n\nSECTION HEADING: "+(s.head||"(ohne)")+"\nSECTION TEXT:\n"+s.body+"\n\nACTION: "+act;
  claude([{role:"user",content:payload}],SW_SECTION,1200).then(function(txt){var j=parseJSON(txt);if(j.section_de){SW.sections[i].body=j.section_de.replace(/^\n+|\n+$/g,"");syncLyricsFromSections();}SW.approved=false;SW.eval=null;renderStep();}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
 }
 
@@ -366,7 +452,7 @@ function step6(b){
  $id("swSuno").onclick=makeSuno;
  copyWire(b);
  var done=document.createElement("button");done.className="btn sec";done.textContent="Fertig \u2192 schlie\u00dfen";done.onclick=close;
- foot(b,5,"Neu beginnen",function(){if(confirm("Songwriting zur\u00fccksetzen?")){SW.direction="";SW.assets=[];SW.themes=[];SW.title="";SW.lyrics="";SW.sections=[];SW.eval=null;SW.approved=false;SW.suno_lyrics="";SW.suno_style="";SW._reflection="";go(1);}},done);
+ foot(b,5,"\u21bb Neu beginnen",function(){resetSession();},done);
 }
 function makeSuno(){var btn=$id("swSuno");if(!SW.lyrics){$id("swSunoErr").textContent="Noch kein Songtext \u2013 zur\u00fcck zu Schritt 5.";return;}busy(btn,true,"formatiert");$id("swSunoErr").textContent="";
  var payload="FINAL SONG TEXT:\n"+SW.lyrics+"\n\nDESIGN:\n"+designSummary()+"\nTITEL: "+(SW.title||"\u2014");
