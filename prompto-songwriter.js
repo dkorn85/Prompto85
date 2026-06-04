@@ -2,7 +2,8 @@
  * Eigenstaendiges Modul wie prompto-guided.js: neuer Tab, spricht die App nur ueber das DOM/globale Funktionen an,
  * veraendert die bestehende Logik nicht. Eigenes IIFE -> ein Fehler hier kann index.html nicht brechen.
  * Flow: Begruessung+Richtung -> Assets lesen -> Themen-Mindmap (nach Wichtigkeit sortiert) ->
- *       Gestaltung (Takt/Rhythmus/Tonart/Stimmung/Instrumente/Genre/Songschema) -> gemeinsamer Songtext ->
+ *       Gestaltung (Takt/Rhythmus/Tonart/Stimmung/Instrumente/Genre/Songschema) ->
+ *       Co-Writing Songtext mit Lektor-Evaluierung + Abschnitts-Kontrolle + Freigabe-Gate ->
  *       formatierter Suno-Textprompt + Styleprompt (kopierbar).
  * Einbau: <script src="prompto-songwriter.js"></script> direkt vor </body> in index.html.
  * Haltung: kreativer Begleiter, KEIN Therapieersatz. Bei Krise behutsam zu echter Hilfe leiten.
@@ -25,10 +26,27 @@ function isTextFile(f){return (f.type&&f.type.indexOf("text/")===0)||/\.(txt|md|
 
 /* ===== Persona + System-Prompts ===== */
 var P="You are the PROMPTO85 Songwriting Companion \u2014 a warm, gentle, emotionally intelligent co-writer for therapeutic songwriting. You help the user turn what moves them into a song. Be supportive and validating WITHOUT amplifying distress. You are NOT a therapist and do not diagnose; this is creative self-expression, not treatment. If the user expresses crisis, self-harm or suicidal thoughts, respond with genuine warmth, gently encourage them to reach out to someone they trust or professional support, and do NOT produce content that details or glorifies self-harm. Reply in GERMAN unless the user's material is clearly in another language. Keep a calm, caring, encouraging tone.";
+
+/* Strenge Lyrik-Qualitaetsregeln (gegen genau die Fehler aus dem ersten Ergebnis) */
+var QUAL="STRICT LYRIC QUALITY RULES (the text must obey ALL of these): "+
+"1) NO clumsy word repetition: never repeat the same distinctive word within ~2 lines (e.g. avoid using \"Leere\" twice, \"ganzer\u2014ganzer\u2014ganz\", \"das wei\u00df ich, das wei\u00df ich\", \"bricht durch\u2026bricht durch\"). Deliberate refrain repetition and a chosen hook are allowed; lazy echoing is not. "+
+"2) NO forced or filler rhymes: never bend grammar or meaning just to make a rhyme; a slightly imperfect rhyme is better than a nonsensical line. Avoid pretentious filler words used only for rhyme (e.g. \"Aplomb\"). "+
+"3) Every line must make literal and emotional SENSE; no broken images, no mixed metaphors that collapse, no lines that only sound deep but mean nothing. "+
+"4) AVOID clich\u00e9s and empty phrases (\"mitten im Licht\", \"bricht durch jeden Schatten\") unless given concrete, fresh, personal grounding. "+
+"5) SINGABLE: natural German stress, consistent line length per section, easy to sing, no tongue-twister consonant clusters. "+
+"6) Keep imagery concrete and personal over abstract sloganeering. Prefer plain honest language to grandiosity.";
+
 var SW_THEMES=P+" From the user's DIRECTION and any ASSETS (texts/images), sensitively surface the emotional THEMES that could become a song. Return ONLY JSON: {\"reflection_de\":\"1-2 warme deutsche Saetze, was du heraushoerst\",\"themes\":[{\"title_de\":\"kurzer Themen-Titel\",\"note_de\":\"1 Satz worum es geht\"}]}";
 var SW_SORT=P+" Given the THEMES with the user's own importance ratings, merge duplicates and sort by importance to the user (most important first). Keep the user's ratings. Return ONLY JSON: {\"themes\":[{\"title_de\":\"...\",\"note_de\":\"...\",\"importance\":\"hoch|mittel|niedrig\"}]}";
-var SW_LYRICS=P+" Write a complete, singable SONG TEXT in the user's language from the prioritised THEMES and the DESIGN choices (genre, mood, key, time signature, tempo/feel, instruments, structure schema). Honor the structure schema with clear section headings (Intro/Strophe/Pre-Refrain/Refrain/Bridge/Outro ...). Make the chorus memorable and the verses concrete and personal; authentic, hopeful where it fits, never clinical. Return ONLY JSON: {\"title_de\":\"Songtitel\",\"lyrics_de\":\"vollstaendiger Songtext mit Abschnitts-Ueberschriften\",\"note_de\":\"1 warmer Satz\"}";
-var SW_REFINE=P+" Revise the SONG TEXT according to the user's WISH. Keep what already works; change only what the wish asks for. Return ONLY JSON: {\"lyrics_de\":\"vollstaendiger ueberarbeiteter Songtext\"}";
+var SW_LYRICS=P+" Write a complete, singable SONG TEXT in the user's language from the prioritised THEMES and the DESIGN choices (genre, mood, key, time signature, tempo/feel, instruments, structure schema). Honor the structure schema with clear section headings (Intro/Strophe/Pre-Refrain/Refrain/Bridge/Outro ...). Make the chorus memorable and the verses concrete and personal; authentic, hopeful where it fits, never clinical. "+QUAL+" Return ONLY JSON: {\"title_de\":\"Songtitel\",\"lyrics_de\":\"vollstaendiger Songtext mit Abschnitts-Ueberschriften\",\"note_de\":\"1 warmer Satz\"}";
+var SW_REFINE=P+" Revise the SONG TEXT according to the user's WISH. Keep what already works; change only what the wish asks for. "+QUAL+" Return ONLY JSON: {\"lyrics_de\":\"vollstaendiger ueberarbeiteter Songtext\"}";
+
+/* Lektor-Evaluierung: bewertet + ueberarbeitet automatisch. Gibt geprueftes Ergebnis + Befund zurueck. */
+var SW_EVAL=P+" You now act as a STRICT, honest LYRICS EDITOR (Lektor). Evaluate the SONG TEXT against the quality rules, then PRODUCE A CORRECTED VERSION that fixes every defect while preserving the song's meaning, structure (keep the same section headings) and the user's intent. "+QUAL+" Be tough: a real defect list, not flattery. Score 1-10 where 10 = flawless, singable, no repetition or forced rhymes, every line meaningful. Return ONLY JSON: {\"score\":N,\"issues_de\":[\"konkreter Mangel 1\",\"konkreter Mangel 2\"],\"summary_de\":\"1 Satz Gesamturteil\",\"lyrics_de\":\"vollstaendige KORRIGIERTE Fassung mit denselben Abschnitts-Ueberschriften\"}";
+
+/* Abschnittsbezogene Aktion im Co-Writing */
+var SW_SECTION=P+" You are co-writing ONE SECTION of a song with the user. Given the FULL SONG (for context), the SECTION HEADING and its current TEXT, and an ACTION, rewrite ONLY that section. Keep it consistent with the rest of the song, the heading stays the same. ACTIONS: \"rewrite\"=fresh take, same meaning; \"imagery\"=more concrete vivid imagery, less abstraction; \"lessrhyme\"=loosen rhyme, prioritise meaning and natural speech; \"condense\"=tighten, remove filler, fewer/stronger lines; \"wish\"=follow the user's explicit wish text. "+QUAL+" Return ONLY JSON: {\"section_de\":\"nur der neue Abschnittstext OHNE Ueberschrift\"}";
+
 var SW_SUNO=P+" Convert the final SONG TEXT into Suno format and write a Suno STYLE prompt. (1) suno_lyrics: take the user's lyrics and re-label every section with Suno meta tags in square brackets ([Intro],[Verse],[Pre-Chorus],[Chorus],[Bridge],[Outro],[Instrumental]) \u2014 keep the actual lyric lines, no commentary, no extra text. (2) suno_style: ONE concise comma-separated ENGLISH line for Suno's Style field, combining genre/sub-genre, mood, lead + backing instruments, tempo in BPM, time signature, key and vocal delivery. This is a VOCAL song \u2014 do NOT add 'no vocals'. Return ONLY JSON: {\"suno_lyrics\":\"...\",\"suno_style\":\"...\"}";
 
 /* ===== Optionslisten (maximale Gestaltung) ===== */
@@ -49,7 +67,7 @@ var SCHEMAS=[
 /* ===== Zustand ===== */
 var SW={step:1,direction:"",assets:[],themes:[],
  design:{genre:GENRES[0],mood:[],key:"egal",timesig:"4/4",bpm:84,feel:"straight",instruments:[],schema:SCHEMAS[0].v,schemaCustom:""},
- title:"",lyrics:"",suno_lyrics:"",suno_style:""};
+ title:"",lyrics:"",sections:[],eval:null,approved:false,suno_lyrics:"",suno_style:""};
 try{var s=localStorage.getItem("sw_step");if(s)SW.step=Math.min(6,Math.max(1,parseInt(s,10)||1));}catch(e){}
 
 /* ===== Styles ===== */
@@ -73,7 +91,19 @@ function injectCSS(){
  ".sw-lyrics{background:var(--soft);border-radius:12px;padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px}",
  ".sw-theme{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line2);border-radius:12px;padding:10px;margin-top:8px}",
  ".sw-imp{display:flex;gap:5px}.sw-imp .chip{padding:5px 10px;font-size:12px}",
- ".sw-asset{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:9px;padding:6px 10px;font-size:12px;margin:6px 6px 0 0}"
+ ".sw-asset{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:9px;padding:6px 10px;font-size:12px;margin:6px 6px 0 0}",
+ ".sw-sec{border:1px solid var(--line2);border-radius:12px;padding:11px;margin-top:10px}",
+ ".sw-sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}",
+ ".sw-sec-h b{font-size:13px}",
+ ".sw-sec-ta{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:var(--body);font-size:13.5px;line-height:1.55;min-height:60px;resize:vertical;background:#fff}",
+ ".sw-acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}",
+ ".sw-acts .chip{padding:5px 9px;font-size:11.5px}",
+ ".sw-eval{border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.55}",
+ ".sw-eval.good{background:#eafaef;border:1px solid #b7e4c5}",
+ ".sw-eval.mid{background:#fff6e6;border:1px solid #f0d9a8}",
+ ".sw-eval.bad{background:#fdecec;border:1px solid #f3b4b4}",
+ ".sw-score{font-weight:800;font-size:15px}",
+ ".sw-gate{display:flex;align-items:center;gap:8px;background:#f3efff;border-radius:10px;padding:9px 12px;margin-top:12px;font-size:12.5px;color:#3a2a6b}"
  ].join("\n");
  document.head.appendChild(st);
 }
@@ -98,6 +128,17 @@ function foot(b,backStep,nextLabel,nextFn,extra){var f=document.createElement("d
  if(extra){f.appendChild(extra);}
  var nx=document.createElement("button");nx.className="btn";nx.textContent=nextLabel;nx.onclick=nextFn;f.appendChild(nx);b.appendChild(f);}
 function chips(arr,sel,multi){return arr.map(function(v){var on=multi?(sel.indexOf(v)>=0):(sel===v);return '<button type="button" class="chip'+(on?" on":"")+'" data-v="'+esc(v)+'">'+esc(v)+'</button>';}).join("");}
+
+/* ===== Lyrics <-> Sections ===== */
+/* zerlegt "[Heading]\nzeilen..." in [{head,body}]; Zeilen vor erster Heading -> head "" */
+function lyricsToSections(txt){var lines=(txt||"").split(/\r?\n/);var secs=[],cur=null;
+ lines.forEach(function(ln){var m=ln.match(/^\s*[\[\(]?\s*(Intro|Strophe|Verse|Pre-?Refrain|Pre-?Chorus|Refrain|Chorus|Bridge|Br\u00fccke|Outro|Hook|Kehrvers|Interlude|Solo)\b[^\]\)]*[\]\)]?\s*$/i);
+  if(m){cur={head:ln.trim(),body:[]};secs.push(cur);}
+  else{if(!cur){cur={head:"",body:[]};secs.push(cur);}cur.body.push(ln);}});
+ return secs.map(function(s){return {head:s.head,body:s.body.join("\n").replace(/^\n+|\n+$/g,"")};}).filter(function(s){return s.head||s.body.trim();});}
+function sectionsToLyrics(secs){return secs.map(function(s){return (s.head?s.head+"\n":"")+s.body;}).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();}
+function syncSectionsFromLyrics(){SW.sections=lyricsToSections(SW.lyrics);}
+function syncLyricsFromSections(){SW.lyrics=sectionsToLyrics(SW.sections);}
 
 /* ===== Schritt-Renderer ===== */
 function renderStep(){rail();var b=$id("swBody");if(!b)return;[step1,step2,step3,step4,step5,step6][SW.step-1](b);}
@@ -177,7 +218,7 @@ function step4(b){
  '<label class="sw-field" style="flex:1"><span class="tag">Takt</span><select class="sw-sel" id="swTime">'+TIMESIGS.map(function(t){return '<option'+(d.timesig===t?" selected":"")+'>'+esc(t)+'</option>';}).join("")+'</select></label></div>'+
  '<label class="sw-field"><span class="tag">Tempo: <b id="swBpmL">'+d.bpm+'</b> BPM</span><input type="range" class="sw-in" id="swBpm" min="50" max="180" step="1" value="'+d.bpm+'" style="padding:0"/></label>'+
  '<div class="sw-field"><span class="tag">Rhythmus-Gef\u00fchl</span><div class="chips" id="swFeel">'+chips(FEELS,d.feel,false)+'</div></div>'+
- '<div class="sw-field"><span class="tag">Instrumente (mehrere m\u00f6glich)</span><div class="chips" id="swInstr">'+chips(INSTRUMENTS,d.instruments,true)+'</div><input class="sw-in" id="swInstrCustom" style="margin-top:8px" placeholder="weitere Instrumente, kommagetrennt \u2026"/></div>'+
+ '<div class="sw-field"><span class="tag">Instrumente (mehrere m\u00f6glich)</span><div class="chips" id="swInstr">'+chips(INSTRUMENTS,d.instruments,true)+'</div><input class="sw-in" id="swInstrCustom" style="margin-top:8px" placeholder="weitere Instrumente, kommagetrennt \u2026" value="'+esc(d.instrCustom||"")+'"/></div>'+
  '<label class="sw-field"><span class="tag">Songschema</span><select class="sw-sel" id="swSchema">'+SCHEMAS.map(function(s){return '<option value="'+esc(s.v)+'"'+(d.schema===s.v?" selected":"")+'>'+esc(s.l)+(s.v?" \u2014 "+esc(s.v):"")+'</option>';}).join("")+'</select></label>'+
  '<input class="sw-in" id="swSchemaCustom" style="margin-top:8px" placeholder="eigenes Schema (falls \u201efrei\u201c gew\u00e4hlt) \u2026" value="'+esc(d.schemaCustom)+'"/>';
  $id("swGenre").onchange=function(e){d.genre=e.target.value;};
@@ -195,40 +236,102 @@ function step4(b){
 function designSummary(){var d=SW.design;var instr=d.instruments.concat((d.instrCustom||"").split(",").map(function(x){return x.trim();}).filter(Boolean));
  return "Genre: "+d.genre+"\nStimmung: "+(d.mood.join(", ")||"offen")+"\nTonart: "+d.key+"\nTakt: "+d.timesig+"\nTempo: "+d.bpm+" BPM ("+d.feel+")\nInstrumente: "+(instr.join(", ")||"offen")+"\nSongschema: "+((d.schema==="" ? (d.schemaCustom||"frei") : d.schema));}
 
-/* Schritt 5 — Songtext */
+/* ===== Schritt 5 — Co-Writing Songtext ===== */
+function evalClass(){if(!SW.eval)return"";var s=SW.eval.score||0;return s>=8?"good":(s>=6?"mid":"bad");}
+function evalHTML(){if(!SW.eval)return"";var c=evalClass();var iss=(SW.eval.issues_de||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join("");
+ return '<div class="sw-eval '+c+'"><div><span class="sw-score">Lektor: '+esc(String(SW.eval.score||"?"))+'/10</span> \u00b7 '+esc(SW.eval.summary_de||"")+'</div>'+(iss?'<ul style="margin:7px 0 0;padding-left:18px">'+iss+'</ul>':"")+'<div class="small" style="margin-top:6px">Die angezeigte Fassung ist bereits die vom Lektor korrigierte Version.</div></div>';}
 function step5(b){
- var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
- b.innerHTML='<div class="sw-h">Schritt 5 \u00b7 Euer Songtext</div>'+
- '<div class="sw-help">Jetzt schreiben wir den Text \u2013 aus deinen wichtigsten Themen, in deinem Sound. Du kannst danach jeden Wunsch \u00e4u\u00dfern (\u201eRefrain hoffnungsvoller\u201c, \u201eweniger Reime\u201c \u2026) und die KI \u00fcberarbeitet.</div>'+
- '<button class="btn" id="swWrite" style="margin-bottom:4px">\u2728 Songtext schreiben</button><div id="swLyrErr" class="x-err"></div>'+
- (SW.title?'<div class="tag" style="margin-top:12px">Titel</div><b>'+esc(SW.title)+'</b>':"")+
- (SW.lyrics?'<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="cp" data-cp="swLyrEl">kopieren</button></div><div class="sw-lyrics" id="swLyrEl">'+esc(SW.lyrics)+'</div>'+
-   '<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">\u00c4nderungswunsch</span><input class="sw-in" id="swWish" placeholder="z.B. Bridge zarter, mehr Bild von Meer \u2026"/></div><button class="btn sec" id="swRefine" style="width:auto;padding:11px 14px">\u00dcberarbeiten</button></div>':"");
- $id("swWrite").onclick=writeLyrics;
- if($id("swRefine"))$id("swRefine").onclick=refineLyrics;
- copyWire(b);
- foot(b,4,"Weiter \u2192 Suno-Prompts",function(){go(6);});
+ var has=!!(SW.lyrics&&SW.sections.length);
+ var html='<div class="sw-h">Schritt 5 \u00b7 Co-Writing \u2013 euer Songtext</div>'+
+  '<div class="sw-help">Hier hast du die volle Kontrolle. Die KI schreibt einen Entwurf, ein strenger <b>Lektor</b> pr\u00fcft ihn automatisch (Wortwiederholungen, Zwangsreime, Sinn, Singbarkeit) und korrigiert. Danach kannst du <b>jeden Abschnitt einzeln</b> bearbeiten \u2013 direkt im Textfeld oder per Knopf. Erst wenn du zufrieden bist, gibst du den Text frei.</div>';
+ if(!has){
+  html+='<button class="btn" id="swWrite">\u2728 Ersten Entwurf schreiben (mit Lektor-Pr\u00fcfung)</button><div id="swLyrErr" class="x-err"></div>';
+  b.innerHTML=html;$id("swWrite").onclick=writeLyrics;
+  foot(b,4,"Weiter \u2192 Suno-Prompts",function(){gateNext();});
+  return;
+ }
+ html+=(SW.title?'<div class="sw-field"><span class="tag">Titel</span><input class="sw-in" id="swTitle" value="'+esc(SW.title)+'"/></div>':"");
+ html+=evalHTML();
+ html+='<div id="swSecWrap">';
+ SW.sections.forEach(function(s,i){
+  html+='<div class="sw-sec" data-i="'+i+'"><div class="sw-sec-h"><b>'+esc(s.head||("Abschnitt "+(i+1)))+'</b></div>'+
+   '<textarea class="sw-sec-ta" data-body="'+i+'">'+esc(s.body)+'</textarea>'+
+   '<div class="sw-acts">'+
+     '<button class="chip" data-act="rewrite" data-i="'+i+'">neu schreiben</button>'+
+     '<button class="chip" data-act="imagery" data-i="'+i+'">mehr Bild</button>'+
+     '<button class="chip" data-act="lessrhyme" data-i="'+i+'">weniger Reim</button>'+
+     '<button class="chip" data-act="condense" data-i="'+i+'">verdichten</button>'+
+   '</div></div>';
+ });
+ html+='</div>';
+ html+='<div class="sw-field" style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><span class="tag">Gesamter \u00c4nderungswunsch</span><input class="sw-in" id="swWish" placeholder="z.B. weniger pathetisch, mehr Alltag, Refrain einpr\u00e4gsamer \u2026"/></div><button class="btn sec" id="swRefine" style="width:auto;padding:11px 14px">\u00fcberarbeiten</button></div>';
+ html+='<div class="sw-foot" style="margin-top:12px"><button class="btn sec" id="swRecheck">\ud83d\udd0d Nochmal pr\u00fcfen</button><button class="btn sec" id="swCopyAll">Text kopieren</button></div>';
+ html+='<div class="sw-gate">'+(SW.approved?'\u2705 Freigegeben \u2013 du kannst zu Suno weitergehen.':'\ud83d\udd12 Suno ist gesperrt, bis du den Text freigibst.')+'</div>';
+ var approve=document.createElement("button");approve.className="btn";approve.id="swApprove";approve.textContent=SW.approved?"\u2713 Freigegeben":"\u2713 Songtext freigeben";
+ b.innerHTML=html;
+
+ if($id("swTitle"))$id("swTitle").oninput=function(e){SW.title=e.target.value;};
+ // Abschnitts-Textfelder: bei Eingabe Lyrics aktualisieren + Freigabe zuruecksetzen
+ b.querySelectorAll("[data-body]").forEach(function(ta){ta.oninput=function(){var i=+ta.getAttribute("data-body");SW.sections[i].body=ta.value;syncLyricsFromSections();invalidate();};});
+ b.querySelectorAll("[data-act]").forEach(function(btn){btn.onclick=function(){sectionAction(+btn.getAttribute("data-i"),btn.getAttribute("data-act"),btn);};});
+ $id("swRefine").onclick=refineLyrics;
+ $id("swRecheck").onclick=function(){runEval(null,$id("swRecheck"));};
+ $id("swCopyAll").onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText((SW.title?SW.title+"\n\n":"")+SW.lyrics);var o=$id("swCopyAll").textContent;$id("swCopyAll").textContent="kopiert \u2713";setTimeout(function(){$id("swCopyAll").textContent=o;},1100);};
+ approve.onclick=function(){SW.approved=true;renderStep();};
+ foot(b,4,SW.approved?"Weiter \u2192 Suno-Prompts":"Erst freigeben",function(){gateNext();},approve);
 }
-function writeLyrics(){var btn=$id("swWrite");busy(btn,true,"schreibt");$id("swLyrErr").textContent="";
+function invalidate(){SW.approved=false;var g=document.querySelector(".sw-gate");if(g)g.innerHTML='\ud83d\udd12 Text ge\u00e4ndert \u2013 bitte erneut pr\u00fcfen und freigeben.';var ap=$id("swApprove");if(ap)ap.textContent="\u2713 Songtext freigeben";}
+function gateNext(){if(!SW.approved){var g=document.querySelector(".sw-gate");if(g)g.innerHTML='\u26a0 Bitte zuerst auf \u201e\u2713 Songtext freigeben\u201c tippen.';return;}go(6);}
+
+/* erster Entwurf -> danach Lektor */
+function writeLyrics(){var btn=$id("swWrite");busy(btn,true,"schreibt");if($id("swLyrErr"))$id("swLyrErr").textContent="";
  var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
  var payload="THEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
- claude([{role:"user",content:payload}],SW_LYRICS,2600).then(function(txt){var j=parseJSON(txt);SW.title=j.title_de||"";SW.lyrics=j.lyrics_de||"";renderStep();}).catch(function(e){$id("swLyrErr").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
-}
-function refineLyrics(){var wish=$id("swWish").value.trim();if(!wish)return;var btn=$id("swRefine");busy(btn,true,"\u00fcberarbeitet");
- claude([{role:"user",content:"SONG TEXT:\n"+SW.lyrics+"\n\nWISH: "+wish}],SW_REFINE,2600).then(function(txt){var j=parseJSON(txt);if(j.lyrics_de)SW.lyrics=j.lyrics_de;renderStep();}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
+ claude([{role:"user",content:payload}],SW_LYRICS,2600).then(function(txt){var j=parseJSON(txt);SW.title=j.title_de||SW.title||"";SW.lyrics=j.lyrics_de||"";
+  return runEval(btn,null);
+ }).catch(function(e){if($id("swLyrErr"))$id("swLyrErr").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
 }
 
-/* Schritt 6 — Suno-Output */
+/* Lektor-Pass: bewertet + ersetzt Lyrics durch korrigierte Fassung, zeigt Befund */
+function runEval(spinBtn,recheckBtn){var rb=recheckBtn;if(rb)busy(rb,true,"pr\u00fcft");
+ var payload="DESIGN:\n"+designSummary()+"\n\nSONG TEXT:\n"+SW.lyrics;
+ return claude([{role:"user",content:payload}],SW_EVAL,3000).then(function(txt){var j=parseJSON(txt);
+  if(j.lyrics_de)SW.lyrics=j.lyrics_de;
+  SW.eval={score:j.score,issues_de:j.issues_de||[],summary_de:j.summary_de||""};
+  SW.approved=false;syncSectionsFromLyrics();renderStep();
+ }).catch(function(e){if(rb)busy(rb,false);if(spinBtn)busy(spinBtn,false);alert("\u26a0 Lektor: "+e.message+" \u2014 Backend pr\u00fcfen (api.php).");
+  // Fallback: wenigstens den ungeprueften Text anzeigen
+  if(SW.lyrics){syncSectionsFromLyrics();renderStep();}
+ });
+}
+
+/* Gesamt-Wunsch -> Refine -> danach erneut Lektor */
+function refineLyrics(){var wish=$id("swWish").value.trim();if(!wish)return;var btn=$id("swRefine");busy(btn,true,"\u00fcberarbeitet");
+ claude([{role:"user",content:"SONG TEXT:\n"+SW.lyrics+"\n\nWISH: "+wish}],SW_REFINE,2600).then(function(txt){var j=parseJSON(txt);if(j.lyrics_de)SW.lyrics=j.lyrics_de;return runEval(btn,null);}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
+}
+
+/* Abschnitts-Aktion (rewrite/imagery/lessrhyme/condense) */
+function sectionAction(i,act,btn){var s=SW.sections[i];if(!s)return;busy(btn,true,"\u2026");
+ var payload="FULL SONG:\n"+SW.lyrics+"\n\nSECTION HEADING: "+(s.head||"(ohne)")+"\nSECTION TEXT:\n"+s.body+"\n\nACTION: "+act;
+ claude([{role:"user",content:payload}],SW_SECTION,1200).then(function(txt){var j=parseJSON(txt);if(j.section_de){SW.sections[i].body=j.section_de.replace(/^\n+|\n+$/g,"");syncLyricsFromSections();}SW.approved=false;SW.eval=null;renderStep();}).catch(function(e){busy(btn,false);alert("\u26a0 "+e.message);});
+}
+
+/* ===== Schritt 6 — Suno-Output (nur nach Freigabe erreichbar) ===== */
 function step6(b){
+ if(!SW.approved){
+  b.innerHTML='<div class="sw-h">Schritt 6 \u00b7 Suno-Prompts</div><div class="sw-help">\ud83d\udd12 Dieser Schritt ist gesperrt, bis du in Schritt 5 den Songtext freigegeben hast.</div>';
+  foot(b,5,"\u2190 Zur\u00fcck zum Songtext",function(){go(5);});
+  return;
+ }
  b.innerHTML='<div class="sw-h">Schritt 6 \u00b7 Suno-Prompts (kopierbar)</div>'+
- '<div class="sw-help">Zum Schluss bauen wir aus deinem Song zwei fertige Felder f\u00fcr Suno: den <b>Textprompt</b> (Lyrics mit [Abschnitts-Tags]) und den <b>Styleprompt</b> (Genre, Stimmung, Instrumente, Tempo, Tonart, Gesang). Beide direkt kopierbar.</div>'+
+ '<div class="sw-help">Zum Schluss bauen wir aus deinem freigegebenen Song zwei fertige Felder f\u00fcr Suno: den <b>Textprompt</b> (Lyrics mit [Abschnitts-Tags]) und den <b>Styleprompt</b> (Genre, Stimmung, Instrumente, Tempo, Tonart, Gesang). Beide direkt kopierbar.</div>'+
  '<button class="btn" id="swSuno">\u2728 Suno-Prompts erzeugen</button><div id="swSunoErr" class="x-err"></div>'+
  (SW.suno_lyrics?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><span class="tag" style="margin:0">Suno \u00b7 Textprompt (Custom Lyrics)</span><button class="cp" data-cp="swSunoLyr">kopieren</button></div><pre class="out" id="swSunoLyr">'+esc(SW.suno_lyrics)+'</pre>':"")+
  (SW.suno_style?'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="tag" style="margin:0">Suno \u00b7 Styleprompt (Style of Music)</span><button class="cp" data-cp="swSunoSty">kopieren</button></div><pre class="out" id="swSunoSty">'+esc(SW.suno_style)+'</pre>':"");
  $id("swSuno").onclick=makeSuno;
  copyWire(b);
  var done=document.createElement("button");done.className="btn sec";done.textContent="Fertig \u2192 schlie\u00dfen";done.onclick=close;
- foot(b,5,"Neu beginnen",function(){if(confirm("Songwriting zur\u00fccksetzen?")){SW.direction="";SW.assets=[];SW.themes=[];SW.title="";SW.lyrics="";SW.suno_lyrics="";SW.suno_style="";SW._reflection="";go(1);}},done);
+ foot(b,5,"Neu beginnen",function(){if(confirm("Songwriting zur\u00fccksetzen?")){SW.direction="";SW.assets=[];SW.themes=[];SW.title="";SW.lyrics="";SW.sections=[];SW.eval=null;SW.approved=false;SW.suno_lyrics="";SW.suno_style="";SW._reflection="";go(1);}},done);
 }
 function makeSuno(){var btn=$id("swSuno");if(!SW.lyrics){$id("swSunoErr").textContent="Noch kein Songtext \u2013 zur\u00fcck zu Schritt 5.";return;}busy(btn,true,"formatiert");$id("swSunoErr").textContent="";
  var payload="FINAL SONG TEXT:\n"+SW.lyrics+"\n\nDESIGN:\n"+designSummary()+"\nTITEL: "+(SW.title||"\u2014");
