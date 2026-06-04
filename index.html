@@ -13,6 +13,8 @@ html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono)}
 .wrap{max-width:1200px;margin:0 auto;padding:22px 18px 80px}
+#main{min-width:0}
+pre{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
 header{display:flex;align-items:center;gap:13px;margin-bottom:22px}
 .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,#1d1d1f,#3a3a3e);display:flex;align-items:center;justify-content:center}
 header h1{font-size:21px;font-weight:800;letter-spacing:-.03em;margin:0}
@@ -48,7 +50,7 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%
 .prev{max-width:100%;border-radius:12px;margin-top:12px;border:1px solid var(--line2)}
 pre.out{margin:12px 0 0;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#1d1d1f;white-space:pre-wrap;word-break:break-word;background:var(--soft);border-radius:12px;padding:13px;max-height:260px;overflow:auto}
 .note{background:#eef4ff;border-radius:12px;padding:12px 13px;font-size:13px;color:#1d1d1f;margin:12px 0}
-.expl{background:var(--soft);border-radius:12px;padding:13px;font-size:13.5px;color:#1d1d1f;white-space:pre-wrap;margin-bottom:14px}
+.expl{background:var(--soft);border-radius:12px;padding:13px;font-size:13.5px;color:#1d1d1f;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:14px}
 .clip{border:1px solid var(--line2);border-radius:14px;padding:14px;margin-bottom:12px}
 .clip h3{font-size:14px;font-weight:700;margin:0}
 .clip .meta{font-family:var(--mono);font-size:10px;color:var(--sub);margin-top:3px}
@@ -168,6 +170,8 @@ const STYLES=[
  ["3D/Digital","Low-Poly Stylized","clean low-poly geometry, flat shading, playful minimal palette, soft ambient occlusion"],
  ["Material","Claymation","handmade clay characters, fingerprint texture, stop-motion micro-jitter, warm practical light"],
  ["Material","Felt / Wool Stop-motion","soft felted-wool puppets, cozy tactile texture, miniature set, warm key light"],
+ ["Project DNA","Aurora Glass","translucent frosted-glass beings with subtle iridescent spectral refraction, delicate rainbow edge-caustics, quiet ambient luminance not emissive blaze, controlled low bloom, no lens flares, no sparkle stars; readable solid nighttime architecture, wet reflective floors, cool grey-blue palette, soft volumetric moonlight, faint embossed sacred-geometry motifs, premium restrained eerie-but-gentle mood"],
+ ["Project DNA","Anima Machina","living cathedral-scale machine fusing mechanical and organic, cast brass copper and blued steel, interlocking gears pipes and lattices following sacred geometry grown-and-forged not assembled, vein-like luminous conduits glowing chazon-orange and violet, breathing crystalline cores, semi-photoreal art-grade finish, single-source volumetric CERN-hall light, deep precise shadow, extreme macro detail, warm metal against cool light, fine dust motes, slow reverent ARTE-documentary awe of scale"],
 ];
 const MODELS=[["gpt","GPT Image 2","image"],["nano","Nano Banana Pro","image"],["seedance","Seedance 2.0","video"],["kling","Kling 3.0 / Omni","video"],["happy","HappyHorse 1.0","video"],["veo","Veo 3.1","video"],["omni","Gemini Omni","video"]];
 const NATIVE={seedance:1,kling:1,veo:1,omni:1,happy:1};
@@ -194,6 +198,7 @@ const $=id=>document.getElementById(id);
 const tr=k=>T[LANG][k]||k;
 const S={style:STYLES[0][2],custom:"",dna:"",brand:"Deutsch",models:{kling:true,seedance:true},aspect:"9:16",engine:"claude-sonnet-4-6",
   sbImage:null,sbImgEl:null,sbGrid:null,sbResult:null,charRefs:[],sheetResult:null,plan:null,chat:[],sbZip:"clip",treeId:"default",tree:null,treeSel:null,cast:{actors:[],history:[],advice:null}};
+window.S=S;window.STYLES=STYLES;
 
 /* ---- init controls ---- */
 (function(){
@@ -309,7 +314,7 @@ function viewChar(){
   if(ad.continuity_de)r+='<div class="small" style="margin-top:8px;line-height:1.6">'+esc(ad.continuity_de)+'</div>';
   const tg=function(arr,lbl,col){if(!arr||!arr.length)return "";return '<div class="small" style="margin-top:6px"><b style="color:'+col+'">'+lbl+':</b> '+arr.map(esc).join(", ")+'</div>';};
   r+=tg(ad.enter,de?"kommt":"enters","#1a7f37")+tg(ad.stay,de?"bleibt":"stays","#0071e3")+tg(ad.exit,de?"geht":"exits","#a11");
-  if(ad.cast_prompt_en){r+='<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button></div><pre>'+esc(ad.cast_prompt_en)+'</pre>';}
+  if(ad.cast_prompt_en){r+='<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="cp" onclick="cpEl(this)">'+tr("copy")+'</button></div><pre class="out">'+esc(ad.cast_prompt_en)+'</pre>';}
   r+='</div>';}
  r+='<div class="card" style="margin-top:16px"><h2>'+(de?"Alle Schauspieler":"All actors")+' ('+A.length+')</h2>';
  if(!A.length)r+='<div class="empty">'+(de?"Noch keine Schauspieler.":"No actors yet.")+'</div>';
@@ -528,5 +533,7 @@ async function sendAgent(){const inp=$("cin");const q=inp.value.trim();if(!q)ret
 function esc(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function cp(t,btn){navigator.clipboard&&navigator.clipboard.writeText(t);const o=btn.textContent;btn.textContent=tr("copied");setTimeout(()=>btn.textContent=o,1100);}
 </script>
+<script src="prompto-guided.js"></script>
+<script src="prompto-songwriter.js"></script>
 </body>
 </html>
