@@ -10,11 +10,13 @@
  *     Krisen-Waechter: bei Suizid/Krise verlaesst der Begleiter den Sammelmodus und leitet zu echter Hilfe.
  * v5.1: Gespraechs-Einstieg sichtbar in Schritt 1 (Knopf "Lieber reden?"), Step-2-Karten hervorgehoben.
  * v5.2: SICHTBARER Versions-Marker oben + Gespraechs-CTA direkt unter der Ueberschrift (vor dem Textfeld).
+ * v5.3: BUGFIX Neugenerierung - alter Songtext wird vor jeder neuen Generierung geleert (clearLyrics),
+ *        sodass "Automatisch"/"Songtext schreiben" nach Aenderungen wirklich neu schreibt statt den alten zu behalten.
  */
 (function(){
 "use strict";
 if(window.__promptoSong)return; window.__promptoSong=true;
-var SW_VER="v5.2";
+var SW_VER="v5.3";
 
 /* ===== Helfer ===== */
 function api(body){return fetch("./api.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});});}
@@ -89,6 +91,8 @@ function freshState(){return {step:1,direction:"",assets:[],themes:[],material:n
  title:"",lyrics:"",sections:[],eval:null,approved:false,suno_lyrics:"",suno_style:"",auto:false};}
 var SW=freshState();
 try{var s=localStorage.getItem("sw_step");if(s)SW.step=Math.min(6,Math.max(1,parseInt(s,10)||1));}catch(e){}
+/* v5.3: vor jeder NEUEN Songtext-Generierung den alten Stand leeren, damit wirklich neu geschrieben wird */
+function clearLyrics(){SW.lyrics="";SW.sections=[];SW.eval=null;SW.title="";SW.approved=false;SW.suno_lyrics="";SW.suno_style="";}
 
 /* ===== Styles ===== */
 function injectCSS(){
@@ -428,7 +432,7 @@ function step4(b){
  $id("swMood").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.mood.indexOf(v);if(k>=0)d.mood.splice(k,1);else d.mood.push(v);c.classList.toggle("on");};});
  $id("swInstr").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){var v=c.getAttribute("data-v"),k=d.instruments.indexOf(v);if(k>=0)d.instruments.splice(k,1);else d.instruments.push(v);c.classList.toggle("on");};});
  $id("swFeel").querySelectorAll("[data-v]").forEach(function(c){c.onclick=function(){d.feel=c.getAttribute("data-v");$id("swFeel").querySelectorAll("[data-v]").forEach(function(x){x.classList.toggle("on",x===c);});};});
- var auto=document.createElement("button");auto.className="btn sw-auto";auto.id="swAutoBtn";auto.textContent="\u2728 Automatisch bis zum Songtext";auto.onclick=function(){SW.auto=true;go(5);startAuto();};
+ var auto=document.createElement("button");auto.className="btn sw-auto";auto.id="swAutoBtn";auto.textContent="\u2728 Automatisch bis zum Songtext";auto.onclick=function(){clearLyrics();SW.auto=true;go(5);startAuto();};
  foot(b,3,"Weiter \u2192 Songtext",function(){SW.auto=false;go(5);},auto);
 }
 function designSummary(){var d=SW.design;var instr=d.instruments.concat((d.instrCustom||"").split(",").map(function(x){return x.trim();}).filter(Boolean));
@@ -470,7 +474,7 @@ function step5(b){
  });
  html+='</div>';
  html+='<div class="sw-field"><span class="tag">Gesamter \u00c4nderungswunsch (ganzer Song)</span><div style="display:flex;gap:8px;align-items:stretch"><input class="sw-in" id="swWish" style="flex:1" placeholder="z.B. weniger pathetisch, mehr Alltag, Refrain einpr\u00e4gsamer \u2026"/><button class="btn sec" id="swRefine" style="width:auto;padding:12px 16px;min-height:48px">\u00fcberarbeiten</button></div></div>';
- html+='<div class="sw-toolbar"><button class="btn sec" id="swRecheck">\ud83d\udd0d Nochmal pr\u00fcfen</button><button class="btn sec" id="swCopyAll">\u29c9 Text kopieren</button></div>';
+ html+='<div class="sw-toolbar"><button class="btn sec" id="swRegen">\u2728 Komplett neu generieren</button><button class="btn sec" id="swRecheck">\ud83d\udd0d Nochmal pr\u00fcfen</button><button class="btn sec" id="swCopyAll">\u29c9 Text kopieren</button></div>';
  var locked=!SW.approved;
  html+='<div class="sw-gate '+(locked?"locked":"open")+'" id="swGate">'+(locked?'\ud83d\udd12 Suno ist gesperrt, bis du den Text freigibst.':'\u2705 Freigegeben \u2013 du kannst zu Suno weitergehen.')+'</div>';
  var approve=document.createElement("button");approve.className="btn";approve.id="swApprove";approve.style.minHeight="50px";approve.textContent=SW.approved?"\u2713 Freigegeben":"\u2713 Songtext freigeben";
@@ -480,6 +484,7 @@ function step5(b){
  b.querySelectorAll("[data-body]").forEach(function(ta){ta.addEventListener("input",function(){var i=+ta.getAttribute("data-body");SW.sections[i].body=ta.value;syncLyricsFromSections();invalidate();});});
  b.querySelectorAll("[data-act]").forEach(function(btn){btn.onclick=function(){sectionAction(+btn.getAttribute("data-i"),btn.getAttribute("data-act"),btn);};});
  $id("swRefine").onclick=refineLyrics;
+ if($id("swRegen"))$id("swRegen").onclick=function(){if(confirm("Songtext komplett neu aus deinem Material generieren? Der aktuelle Text wird ersetzt."))writeLyrics();};
  $id("swRecheck").onclick=function(){runEval(null,$id("swRecheck"));};
  $id("swCopyAll").onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText((SW.title?SW.title+"\n\n":"")+SW.lyrics);var o=$id("swCopyAll").textContent;$id("swCopyAll").textContent="kopiert \u2713";setTimeout(function(){$id("swCopyAll").textContent=o;},1100);};
  approve.onclick=function(){SW.approved=true;renderStep();};
@@ -491,6 +496,7 @@ function gateNext(){if(!SW.approved){var g=$id("swGate");if(g){g.className="sw-g
 
 /* Auto-Flow: schreibt -> Lektor, ohne Zwischenklicks; haelt im Co-Writing an */
 function startAuto(){var msg=function(t){var m=$id("swAutoMsg");if(m)m.textContent=t;};
+ clearLyrics();SW.auto=true;
  msg("Schreibe Songtext aus deinem Material \u2026");
  var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
  var payload="MATERIAL (Wortlaut des Nutzers \u2014 nutze es direkt):\n"+materialText()+"\n\nTHEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
@@ -503,12 +509,13 @@ function startAuto(){var msg=function(t){var m=$id("swAutoMsg");if(m)m.textConte
 }
 
 /* manueller erster Entwurf -> danach Lektor (verkettet) */
-function writeLyrics(){var btn=$id("swWrite");busy(btn,true,"schreibt");if($id("swLyrErr"))$id("swLyrErr").textContent="";
+function writeLyrics(){var btn=$id("swWrite")||$id("swRegen");busy(btn,true,"schreibt");if($id("swLyrErr"))$id("swLyrErr").textContent="";
+ clearLyrics();renderStep();
  var themes=SW.themes.slice().sort(function(a,c){var o={hoch:0,mittel:1,niedrig:2};return (o[a.importance]||1)-(o[c.importance]||1);});
  var payload="MATERIAL (Wortlaut des Nutzers \u2014 nutze es direkt):\n"+materialText()+"\n\nTHEMEN (wichtigste zuerst):\n"+themes.map(function(t){return "- ["+t.importance+"] "+t.title+(t.note?": "+t.note:"");}).join("\n")+"\n\nRICHTUNG: "+(SW.direction||"\u2014")+"\n\nDESIGN:\n"+designSummary();
  claude([{role:"user",content:payload}],SW_LYRICS,2600).then(function(txt){var j=parseJSON(txt);SW.title=j.title_de||SW.title||"";SW.lyrics=j.lyrics_de||"";
-  return runEval(btn,null);
- }).catch(function(e){if($id("swLyrErr"))$id("swLyrErr").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";busy(btn,false);});
+  return runEval(null,null);
+ }).catch(function(e){if($id("swLyrErr"))$id("swLyrErr").textContent="\u26a0 "+e.message+" \u2014 Backend pr\u00fcfen (api.php).";if($id("swWrite"))busy($id("swWrite"),false);});
 }
 
 /* Lektor-Pass */
