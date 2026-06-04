@@ -9,10 +9,12 @@
  *     Gefuehl -> Bild/Szene -> Klang/Stimmung -> Worte; SW_HARVEST erntet das Gespraech als Material).
  *     Krisen-Waechter: bei Suizid/Krise verlaesst der Begleiter den Sammelmodus und leitet zu echter Hilfe.
  * v5.1: Gespraechs-Einstieg sichtbar in Schritt 1 (Knopf "Lieber reden?"), Step-2-Karten hervorgehoben.
+ * v5.2: SICHTBARER Versions-Marker oben + Gespraechs-CTA direkt unter der Ueberschrift (vor dem Textfeld).
  */
 (function(){
 "use strict";
 if(window.__promptoSong)return; window.__promptoSong=true;
+var SW_VER="v5.2";
 
 /* ===== Helfer ===== */
 function api(body){return fetch("./api.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});});}
@@ -97,6 +99,7 @@ function injectCSS(){
  ".sw-ov.open{display:flex}",
  ".sw-box{background:#fff;max-width:860px;width:100%;border-radius:20px;padding:20px 22px 26px;box-shadow:0 24px 70px rgba(0,0,0,.3)}",
  "@media(max-width:680px){.sw-box{padding:16px 14px 22px;border-radius:16px}}",
+ ".sw-ver{display:inline-block;background:#7b61ff;color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:7px;padding:3px 9px;margin-bottom:10px}",
  ".sw-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}",
  ".sw-top-r{display:flex;align-items:center;gap:8px}",
  ".sw-reset{border:1px solid var(--line);background:#fff;border-radius:9px;height:38px;padding:0 12px;cursor:pointer;font-size:12.5px;font-family:var(--body);color:var(--sub);font-weight:600}",
@@ -232,15 +235,18 @@ function secBadge(t){return {chorus:"Refrain \u00b7 wiederkehrender Kern",bridge
 function lineCount(s){return (s.body||"").split(/\n/).filter(function(x){return x.trim();}).length;}
 
 /* ===== Schritt-Renderer ===== */
-function renderStep(){rail();var b=$id("swBody");if(!b)return;[step1,step2,step3,step4,step5,step6][SW.step-1](b);}
+function renderStep(){rail();var b=$id("swBody");if(!b)return;
+ try{[step1,step2,step3,step4,step5,step6][SW.step-1](b);}
+ catch(err){b.innerHTML='<div class="sw-ver">'+SW_VER+' \u00b7 FEHLER</div><div class="sw-help" style="background:#fdecec;color:#7a1f1f">\u26a0 Schritt '+SW.step+' konnte nicht aufgebaut werden:<br><b>'+esc(err&&err.message?err.message:String(err))+'</b><br><br>Bitte diesen Text dem 1. Offizier zeigen.</div>';}
+}
 
 /* Schritt 1 — Begruessung + Richtung (mit sichtbarem Gespraechs-Einstieg) */
 function step1(b){
- b.innerHTML='<div class="sw-h">Willkommen \u2728</div>'+
+ b.innerHTML='<div class="sw-ver">'+SW_VER+' \u00b7 Schritt 1</div>'+
+ '<div class="sw-h">Willkommen \u2728</div>'+
+ '<button type="button" class="sw-talk-cta" id="swTalkCta" style="margin-top:0;margin-bottom:14px"><span class="ic">\ud83d\udde3\ufe0f</span><span><b>Lieber reden? Gespr\u00e4ch beginnen</b><span class="d">Du sp\u00fcrst etwas, findest aber noch nicht die Worte? Ein einf\u00fchlsamer Begleiter hilft dir Schritt f\u00fcr Schritt \u2013 vom Gef\u00fchl zu Bild, Klang und deinen eigenen Worten.</span></span></button>'+
  '<div class="sw-help">Hier verwandeln wir gemeinsam das, was dich bewegt, in einen Song. Es geht nicht um perfekte Reime, sondern um <b>deinen Ausdruck</b>. Das hier ist ein kreativer Begleiter \u2013 kein Ersatz f\u00fcr professionelle Unterst\u00fctzung. Wenn dir etwas schwer auf dem Herzen liegt, ist es v\u00f6llig okay, dir auch echte Menschen an die Seite zu holen.<br><br>In welche Richtung soll es gehen? Worum oder um wen geht es? Welches Gef\u00fchl soll der Song tragen?</div>'+
- '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta sw-grow" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>'+
- '<div class="sw-or">oder</div>'+
- '<button type="button" class="sw-talk-cta" id="swTalkCta"><span class="ic">\ud83d\udde3\ufe0f</span><span><b>Lieber reden? Gespr\u00e4ch beginnen</b><span class="d">Du sp\u00fcrst etwas, findest aber noch nicht die Worte? Ein einf\u00fchlsamer Begleiter hilft dir Schritt f\u00fcr Schritt \u2013 vom Gef\u00fchl zu Bild, Klang und deinen eigenen Worten.</span></span></button>';
+ '<label class="sw-field"><span class="tag">Deine Richtung</span><textarea class="sw-ta sw-grow" id="swDir" placeholder="z.B. Ein Lied f\u00fcr meine Schwester, \u00fcber Loslassen und Dankbarkeit \u2026">'+esc(SW.direction)+'</textarea></label>';
  $id("swDir").oninput=function(e){SW.direction=e.target.value;};
  $id("swTalkCta").onclick=function(){SW.talkActive=true;go(2);};
  wireGrow(b);
