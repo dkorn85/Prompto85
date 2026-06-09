@@ -1,16 +1,16 @@
 # GPT Image 2.0 (`gpt-image-2`)
 
-OpenAI's most capable image generation + editing model, released 21 Apr 2026 (product surface: "ChatGPT Images 2.0"). Quality-first architecture integrated into GPT-4o, with **integrated reasoning** ("Thinking"). Knowledge cutoff Dec 2025 — it understands recent brands/styles without you describing them from scratch.
+OpenAI's most capable image generation + editing model, released 21 Apr 2026 (product surface: "ChatGPT Images 2.0"). Quality-first architecture integrated into GPT-4o, with **integrated reasoning** ("Thinking"). Knowledge cutoff Dec 2025 — it understands recent brands/styles without you describing them from scratch. As of Jun 2026 it sits **top of the LMArena image leaderboard**.
 
 ## What it is best at
 - **Character sheets & storyboard frames:** up to **8 consistent images from one prompt** (multi-image consistency). This is the workhorse for "cut" sequences (see storyboard-and-cut.md).
-- **In-image text:** ~99% accuracy across Latin / CJK / Hindi / Bengali.
+- **In-image text:** ~99% accuracy across Latin / CJK / Hindi / Bengali (verified again on our chazon item-sheet: Hebrew חזון + German labels rendered cleanly — see Erkenntnis-Log §14).
 - **Photoreal key art**, product hero stills, UI/infographics, editorial.
 - **Editing:** strong identity/detail preservation on image-to-image and multi-reference edits.
 
 ## Technical envelope
-- Resolution: up to 2K (4K in beta).
-- Size constraints (literal sizes): multiples of **16 px**, max edge **3840**, aspect cap **3:1**, total pixels **655k–8.3M**.
+- Resolution: **2K native** (web sources cite ~2048 px/side as the native ceiling). The doc's earlier "4K beta / max edge 3840" is **unverified** — treat 2K as the reliable working resolution; in Higgsfield use `resolution: 2k`, `quality: high`.
+- Size constraints (literal sizes): multiples of **16 px**, aspect cap **3:1**, total pixels **655k–8.3M**.
 - Quality: `low` (latency-sensitive), `medium` / `high` (max fidelity).
 - API: `POST /v1/images/edits` (multipart). Params: `image`, `mask`, `prompt`, `size`, `quality`, `background`, `output_format`, `n`. Multiple reference inputs supported for multi-reference edits. Note: some legacy gpt-image-1/1.5 params are rejected by gpt-image-2.
 - `background: transparent` for cutout-style assets (final cleanliness still depends on prompt — ask for crisp edges, no halos/fringing).
@@ -39,7 +39,14 @@ Label each input image by role and reference the labels in the instruction (e.g.
 - Then generate each panel as part of an **8-image consistent set** in one call when possible, or feed the sheet as a reference per panel.
 - Keep the style token block byte-identical across panels; vary only composition + action.
 
+## Multi-identity scenes — the bleed trap (Erkenntnis-Log §21)
+- Putting **several human identities in ONE frame** makes them bleed into each other (the strongest reference face overwrites the others). Anti-resemblance prompting alone does **not** fix it reliably.
+- Fix order: (1) one own anchor per character + hard "clearly different / no duplicates" wording; (2) if it still bleeds → **solo shot**, reference only that one character (no foreign identity in frame = no bleed) and put the group in a separate shot; (3) else composite single renders in the editor.
+- Non-human characters (e.g. a glowing light-spirit) bleed into humans too — give them their own anchor and state explicitly "NOT a person".
+
 ## Common failures → fixes
 - Drifting faces across panels → use the multi-image set or always pass the locked sheet as reference.
+- **Multiple identities in one frame bleeding / a character duplicated → see the bleed trap above (§21): own anchor each, else solo-shot, else composite.**
+- **Extra limbs in dynamic/prop poses (third arm) → "exactly two arms and two hands, no extra limbs" in keyframe AND video prompt; fix the keyframe first (§22).**
 - Garbled text → quote it, cap it, constrain it, shorten it; for long copy use a poster layout.
 - Over-busy frames → cap object count, name the focal subject, add "single clear focal point".

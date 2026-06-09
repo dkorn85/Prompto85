@@ -2,6 +2,13 @@
 
 A **scene-aware AI director**, not just a text-to-video generator. The headline feature is **native multi-shot**: a storyboard of up to **6 shots in a single output**, up to **15s total**, with **native audio + lip-sync** and multilingual dialogue. Unified multimodal engine (text/image/video/audio as equal inputs), "Elements 3.0", physics-aware motion.
 
+## Verified specs & production deltas (web-checked, Jun 2026)
+- **Family = 4 models:** Video 3.0, Video 3.0 Omni, Image 3.0, Image 3.0 Omni.
+- **Native 4K** output (genuinely generated, not just upscaled).
+- **Native-audio languages: EN / ZH / JA / KO / ES — NO German.** → **German voice & SFX MUST go through ElevenLabs** (this is *why* our audio-routing §6 exists). Never rely on Kling for German dialogue; keep model-audio for ambient only.
+- **Multi-shot:** up to **6 shots / 15 s** confirmed.
+- **In Higgsfield:** `mode` = std / pro / 4k → **pro ≈ 1080p (our default)**, 4k avoided (cost); `sound` = on/off → **off for all drafts** (audio costs, §6); dark/ominous prompts trigger the **"IN THE DARK" preset notice** → re-fire with `declined_preset_id` (24bae836-…) to generate literally. Roles: `start_image` / `end_image`; duration 3–15 s.
+
 ## Kling 3.0 vs Kling 3.0 Omni
 - **Kling 3.0** — focus on video quality, motion, multi-shot, native audio. Great for single connected sequences.
 - **Kling 3.0 Omni** — the "everything" model. Adds: character **voice binding**, **video-source character reference**, video-to-video as a primary mode, `@` tagging + Elements, and **multi-clip consistency** (same character looks/sounds identical across separate generations). Choose Omni whenever identity must hold across shots/clips, or when restyling existing footage.
@@ -16,6 +23,7 @@ Shot 4 (5s): [... + dialogue line if any]  Native audio: English voice, natural 
 ```
 - Custom Multi-shot mode lets you define shot count, per-shot duration, framing, and action. The clearer the shot labels, the tighter the adherence.
 - Handles **shot-reverse-shot** and maintains character appearance across angles. For multi-character dialogue, specify **who speaks when**.
+- **German dialogue:** do NOT request it as native audio (unsupported language) — generate silent and dub via ElevenLabs.
 
 ## User's locked Kling 3.0 Omni conventions (honour these)
 - 12–15s; **max 4 characters**; **explicit layout, no wide shots**; **IMAX handheld realism**; **time-coded segments**; **realistic physics**.
@@ -37,6 +45,8 @@ Describe mechanics explicitly: "each step lands heel-first, then rolls forward w
 ## Pitfalls → fixes
 - Prose instead of shot lists → rewrite as a numbered list.
 - Native audio left ON during drafts → it costs significantly; **iterate silent, add audio on the final take.**
+- **German (or any non-EN/ZH/JA/KO/ES) dialogue requested as native audio → unsupported; generate silent and dub via ElevenLabs (§6).**
 - Lip-sync drift in long dialogue → shorten lines or fix with OmniEdit.
 - Wide shots when continuity matters → user convention forbids them; stay in medium/close coverage.
+- Dark-scene prompt swallowed by the "IN THE DARK" preset → re-fire with `declined_preset_id`.
 - **Prompt in English** for best cinematic-term adherence even if display text is German.

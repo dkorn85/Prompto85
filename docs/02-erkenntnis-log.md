@@ -66,7 +66,8 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** Doku-Annahme „Nano Banana Pro = Storyboard-König“ stimmt nicht universell.
 - **Befund (direkter A/B, Aurora-Glass-Look):** GPT Image 2 lieferte den kinoreifen Glas-/Refraktions-Look mit gebauter Architektur, nassen Reflexionen und sauberem „eerie-but-gentle“-Ton klar überlegen; Nano Banana Pro kippte ins weiche, milchig-flache Kinderbuch.
 - **Bestätigt (2. Projekt, Anima-Machina-Look):** GPT Image 2 trug auch den halb-photorealen Messing-/Mechanik-Look mit Maßstab und Lichtphysik überzeugend.
-- **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B). Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet → **GPT Image 2**; flach-illustrativ mit vielen konsistenten Figuren → **Nano Banana Pro**.
+- **Bestätigt (3. Projekt, chazon-Item-Sheet, textreich):** bei **viel In-Image-Text** (Hebräisch חזון + deutsche Labels) schlug GPT Image 2 Nano Banana Pro erneut klar („genauer“) — Text-Dichte kippt die Wahl Richtung GPT Image 2, selbst im weichen Illustrations-Look.
+- **Lehre:** Storyboard-Motor **pro Projekt am Look testen** (ein Sheet A/B). Faustregel: photoreal-nah / refraktiv / dramatisch beleuchtet **oder textreich** → **GPT Image 2**; flach-illustrativ, viele konsistente Figuren, wenig Text → **Nano Banana Pro**.
 
 ## 15. Seedance: Storyboard als Sequenz lesen, NICHT das Grid animieren
 - **Problem:** Seedance animiert ein Storyboard-Sheet sonst als EIN Bild — schwenkt/zoomt über das Grid, statt die Panels als Cuts zu lesen.
@@ -101,3 +102,27 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
   - Video-Prompts: schlicht im **Präsens**, **kein** Kamera-Jargon, **keine** Panel-Querverweise („meanwhile/suddenly“), optional Dialog als `[Figur] says: "…"`, Endtag **„ambient only, no music, no subtitles“** (statt nur „No Music“ — unsere Audio-Policy §6).
   - Volle Shot-Kontrolle + Captions, kostet aber manuellen Schnitt.
 - **Wahl pro Projekt:** NATIVE für schnelle, anschlusssichere Sequenzen; CUT, wenn jeder Shot einzeln kontrolliert werden soll.
+
+## 21. Multi-Identitäts-Bleed in EINEM Frame (GPT Image 2)
+- **Problem:** Mehrere menschliche Identitäten in **einem** GPT-Image-2-Frame laufen ineinander — Figuren übernehmen gegenseitig Look/Gesicht. Selbst passiert (T2, „Tanz des Lebens“): erst war **Dilo doppelt** im Bild; nach Korrektur sah der **Gegner aus wie Dilo** und **Lumi (ein Lichtwesen!) wie Tani**.
+- **Ursache:** bei 3–4 konkurrierenden Referenzbildern in *einer* Szene trennt das Modell die Identitäten nicht sauber; das stärkste/ähnlichste Referenzgesicht „gewinnt“ und färbt auf die anderen ab. Auch explizite Anti-Resemblance-Prompts (v2/v3) lösten es **nicht** zuverlässig.
+- **Lösung, in dieser Reihenfolge:**
+  1. **Je eigener Anker pro Figur** + harte Abgrenzung („CLEARLY DIFFERENT from X: no top-knot, no beard …“), klare räumliche Trennung, „no duplicates, no clones, no twins“.
+  2. Hilft das nicht → **Solo-Shot**: die Schlüsselfigur **allein** rendern und **nur ihren** Anker referenzieren (keine Fremd-Identität im Bild → *kann* nicht bleeden). Die Gruppe in einen separaten Shot auslagern, der schon sauber sitzt.
+  3. Alternativ **Composite**: Figuren einzeln rendern, im Editor montieren.
+- **Merksatz:** Nicht gegen den Bleed *anprompten* — **die Referenzen wegnehmen**. Ein Anker = kein Bleed. (Ergänzt §16: dort eine Identität pro *Sheet*, hier eine Identität pro *Szenen-Frame* wo möglich.)
+
+## 22. Wiederkehrende Glied-/Hand-Fehler in dynamischer Action
+- **Problem:** Dilo bekam in bewegten Action-Clips einen **dritten Arm** (Seedance, Strahlen-Pose mit Dreizack). Hände/Arme sind der häufigste Anatomie-Fehler.
+- **Ursache:** dynamische Posen + Prop/Waffe in der Hand verleiten zu Extra-Gliedmaßen; der Fehler entsteht oft **schon im Keyframe**, nicht erst in der Animation.
+- **Lösung:** „**exactly two arms and two hands**, both gripping the single [Prop], no third arm, no extra/duplicated limbs, anatomically correct“ in **Keyframe UND Video-Prompt**. Prop-Interaktion/Handzahl reduzieren wo möglich. Bei Fehler: **erst den Keyframe fixen** (sonst trägt die Animation den Fehler weiter), dann neu animieren.
+
+## 23. Keyframe-first — kein Within-Turn-Chaining
+- **Problem:** Ein frisch generierter Frame lässt sich **nicht im selben Schritt** als Startbild/Referenz weiterverwenden („Media input not found“).
+- **Ursache:** der Frame muss erst fertig rendern, bevor seine ID als Eingang gültig ist.
+- **Lösung:** strikt zweistufig — **(1) Keyframes generieren (billig) → freigeben → (2) animieren (teuer)**. Immer nur an **bereits gerenderte** Frames ankern. Spart Re-Rolls und hält die Freigabe-Schleife sauber.
+
+## 24. Fertige Text-/Titel-Frames nicht animieren (erweitert §13)
+- **Problem:** §13 verbietet Text in NATIVE-Sheets. Eigener Fall: ein **fertiges Titel-/Endcard-Standbild** mit eingebranntem Text (Titel, „chazon.eu“) soll als Clip leicht bewegt werden → das Video-Modell verzieht den Text.
+- **Lösung:** Bewegung und Text trennen — **Keyframe als Standbild halten** und den Text im Editor als **Overlay** über einen sauberen, text-freien Bewegungs-Plate legen. Im Prompt zwar „keep text perfectly still & legible, only the subject moves“ setzen, dem Ergebnis aber nicht blind vertrauen.
+- **Tool-Quirk (Higgsfield/Kling 3.0):** dunkle Prompts triggern die **„IN THE DARK“-Preset-Notice** → mit `declined_preset_id` (24bae836-…) neu feuern, um literal zu generieren. Audio während Drafts **off** (§6); `mode: pro` ≈ 1080p (Default), Seedance-Action 720p als Kostenbremse, 4k meiden.
