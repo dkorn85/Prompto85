@@ -151,3 +151,16 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Lösung:** **echten letzten Frame** von Clip N per ffmpeg extrahieren (`ffmpeg -sseof -0.1 -i clipN.mp4 -frames:v 1 last.png`) und als **`primary` (literales Startbild)** von Clip N+1 setzen. Das Sheet bleibt @Image-Anchor für Look und Shot-Folge, aber die Übergabe läuft über den realen Frame. Frame muss sauber/textfrei sein (Start-/End-Frame-Regel).
 - **Konsequenz für den Workflow:** Sub-Clips einer Sequenz sind damit **seriell**, nicht parallel zu generieren — Clip N muss fertig sein, bevor N+1 startet (deckt sich mit §23 Keyframe-first: nie an ungerenderte Assets ankern).
 - **Anschluss-Panel auf dem Folge-Sheet trotzdem behalten** — es hält die Shot-Zählung der zeitcodierten Liste konsistent und gibt dem Modell die narrative Brücke.
+
+## 28. Sheet-QA-Checkliste vor jedem Video-Run (Gate, kein Vorschlag)
+- **Problem (Babaji-Session, Juli 2026):** Ein Sheet passierte die „Prüfung“ (textfrei ✓, Panel-Anzahl ✓) und war trotzdem Storyboard-Schrott: Anker-Panel zeigte nur angeschnittene Hände + Trommel statt des Vorgänger-Panels, Musiker **posierten frontal mit Kamera-Blick** (Band-Portrait statt Spielmoment), Framing sprang regellos zwischen Close/Medium/Ganzkörper. Die QA hatte nur Formalien geprüft, nicht Storyboard-Qualität.
+- **Ursache:** Prompt beschrieb Panels nur grob statt das PANEL-Schema (beat/subject/shot/light) durchzudeklinieren — und die Prüfung checkte nicht gegen das Schema.
+- **QA-Gate — JEDES Sheet vor JEDEM Video-Run, alle Punkte PFLICHT:**
+  1. **Textfrei** — keine Glyphe irgendwo (§13).
+  2. **Panel-Anzahl + Orientierung** wie geplant (§17).
+  3. **Anker-Match:** Panel 1 visuell gegen das Vorgänger-Panel/den End-Frame halten — gleiche Shot-Größe, gleiche Figuren, gleiche Location-Details. „Gleiches Motiv“ reicht nicht.
+  4. **Beat-Check pro Panel:** jeder Beat als *Spielmoment* eingefroren („mid-strike“, „mid-breath“), NICHT als Pose/Aufstellung/Gruppenfoto (§18 verschärft: Posieren ist der getarnte Verstoß).
+  5. **Kein Kamera-Blick:** niemand schaut in die Linse — im Sheet-Prompt explizit „candid in-scene moment, no eye contact with camera“ setzen, sonst animiert Seedance Kamera-Starrer.
+  6. **Konsistente Shot-Grammatik:** Shot-Größe pro Panel bewusst gesetzt (aus dem PANEL-Schema), keine zufälligen Sprünge.
+  7. **Identitäts-Panels** gegen Character-Referenz (§26).
+- **Regel:** Fällt EIN Punkt durch → Sheet neu generieren (0,15 $), NICHT „wird schon gehen“ (2,88 $ + Re-Roll). Das Gate gilt auch bei Zeitdruck und auch für „kleine“ Sheet-Revisionen.
