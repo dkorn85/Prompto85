@@ -1,5 +1,5 @@
 # Prompto85 — Erkenntnis-Log
-**Stand: Juni 2026 · technische Lessons aus der laufenden Produktion**
+**Stand: Juli 2026 · technische Lessons aus der laufenden Produktion**
 
 Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im Umbauplan.
 
@@ -82,6 +82,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** quadratische Panels in einem 9:16-Output → Seitencrop, breite Kompositionen verlieren Bildinhalt.
 - **Lösung:** Sheets in der Orientierung rendern, die die Shots erhält. Landscape → nativ 16:9. Ist 9:16 das Ziel, Panels gleich hochkant komponieren.
 - **Faustregel:** breit-cinematischer Doku-Look → 16:9; reines Short-Vertikal → vertikal anlegen.
+- **Ergänzung (Babaji-Session, Juli 2026):** funktionierendes Muster für 9:16-Clips — **16:9-Sheet-Canvas mit 4–6 hochkant komponierten 9:16-Panels nebeneinander**. Sheet-Format ≠ Panel-Format; entscheidend ist die Panel-Orientierung.
 
 ## 18. STILL-IMAGE-Regel (Panel = ein einzelnes Foto)
 - **Problem:** Panel-Beschreibungen mit Zeit-/Bewegungsverben lassen sich nicht als Einzelbild rendern — das Modell improvisiert oder verzerrt. Selbst passiert: „Dilo gives a calm nod“, „Tani notices / dawning understanding“, „Brandt glances back“.
@@ -126,3 +127,18 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** §13 verbietet Text in NATIVE-Sheets. Eigener Fall: ein **fertiges Titel-/Endcard-Standbild** mit eingebranntem Text (Titel, „chazon.eu“) soll als Clip leicht bewegt werden → das Video-Modell verzieht den Text.
 - **Lösung:** Bewegung und Text trennen — **Keyframe als Standbild halten** und den Text im Editor als **Overlay** über einen sauberen, text-freien Bewegungs-Plate legen. Im Prompt zwar „keep text perfectly still & legible, only the subject moves“ setzen, dem Ergebnis aber nicht blind vertrauen.
 - **Tool-Quirk (Higgsfield/Kling 3.0):** dunkle Prompts triggern die **„IN THE DARK“-Preset-Notice** → mit `declined_preset_id` (24bae836-…) neu feuern, um literal zu generieren. Audio während Drafts **off** (§6); `mode: pro` ≈ 1080p (Default), Seedance-Action 720p als Kostenbremse, 4k meiden.
+
+## 25. Merkaba Honey / Seedance: Moderation ist PROVIDER-abhängig (erweitert §1)
+- **Problem (Babaji-Session, Juli 2026):** seedance-2-mini via **runware** lehnte ein harmloses Multi-Figur-Storyboard-Sheet 4× in ~10 s als „ByteDance content moderation“ ab — Input-seitige Ablehnung. Getestet und ausgeschlossen: Prompt-Begriffe (religiös/ethnisch neutralisiert), Ref-Anzahl (1 vs. 2), nackte Oberkörper (bedeckte Sheet-Variante fiel identisch durch).
+- **Befund:** **dasselbe Sheet, derselbe Prompt via `provider: wavespeed` → läuft sauber durch** (12 s, 4 Shots, Audio, ~3,5 min Renderzeit). Die Ablehnung war runware-seitig, nicht ByteDance-modell-seitig und nicht unser Content (bestätigt §1: Gesichter-Cluster/Sheets triggern Filter, nicht Inhalt).
+- **Regel:** Seedance-Jobs mit Sheet-/Multi-Figur-Refs über Merkaba Honey **immer mit `provider: "wavespeed"` pinnen**. Diagnose-Signal: Ablehnung in <15 s = Input-Moderation → Provider wechseln, NICHT den Content umbauen. Kosten: wavespeed ~3× runware-Schätzung (2.88$ vs 0.97$ / 12 s 720p mit Refs), aber runware liefert schlicht nicht.
+- **Merksatz:** Erst Provider ausschließen, dann am Content schrauben. Abgelehnte Jobs kosten nichts (cost_actual = null) → Provider-Pin-Tests sind gratis.
+
+## 26. Identity-Ref ist PFLICHT in jedem Video-Run + Panel-Verifikation vor Nutzung
+- **Problem (Babaji-Session):** zwei vermeidbare Identitäts-Fails in einer Session. (a) Anchor-Sheet ohne Character-Referenz generiert → falsches Gesicht („nicht Babaji“). (b) Video-Run mit unverifiziertem Sheet + ohne Identity-Ref gefeuert → Hauptfigur driftete zur Jesus-Ikonografie (weißer Schal + langes Haar kippt generisch ins Sakral-Klischee). 2.88$ verbrannt.
+- **Regeln:**
+  1. **Jedes Sheet mit Identitätsfigur wird MIT deren Character-Sheet als Ref generiert** — nie nur aus Textbeschreibung.
+  2. **Identitäts-Panel vor Nutzung visuell verifizieren** (Panel croppen, gegen Referenz prüfen) — bei JEDER Sheet-Version neu, auch nach „kleinen“ Änderungen (Kleidungs-Variante = neue Version = neue Prüfung).
+  3. **Character-Sheet als @Image-Identity-Ref in JEDEM Video-Run mitgeben**, der die Figur enthält — auch wenn sie auf dem Anchor-Sheet korrekt aussieht. Bei Diagnose-Tests, die Refs reduzieren: Identity-Ref vor dem Produktiv-Run wieder einsetzen.
+  4. Negativ-Merkmale explizit sperren, wenn Drift-Gefahr zu Archetypen besteht („no beard“ bei langhaarigen Weißgewand-Figuren gegen Jesus-Drift).
+- **Merksatz:** Verifizieren ist billiger als Re-Rendern — ein view-Call kostet nichts, ein 12s-Clip 2.88$.
