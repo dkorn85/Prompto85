@@ -17,6 +17,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** Storyboards über 15 s nicht in einem Clip generierbar (Modell-Limit).
 - **Lösung:** max. 15 s pro Storyboard, in Sub-Clips ~12 s splitten (1A–1D), je ≤4 Panels.
 - **ANSCHLUSS-Regel:** letztes Panel von Clip N = erstes Panel von Clip N+1 → nahtlose Schnitte.
+- *(Verschärft in §27: Panel-Anschluss reicht NICHT für Frame-Identität — echten End-Frame als `primary` übergeben.)*
 
 ## 4. Modell-bewusster Schnitt (native vs. cut)
 - **NATIVE** (Seedance, Kling, Veo, Omni, HappyHorse): ganzes Sheet als @sheet-Referenz, ein Sequenz-Prompt, kein eigener Schnitt.
@@ -73,6 +74,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** Seedance animiert ein Storyboard-Sheet sonst als EIN Bild — schwenkt/zoomt über das Grid, statt die Panels als Cuts zu lesen.
 - **Lösung (Prompt-Kern):** explizit „each panel is ONE separate camera shot, read left-to-right top-to-bottom as the shot order“; KEIN Pan/Zoom über das Grid, KEINE Panel-Ränder/Gutter/Split-Screen/zwei Panels gleichzeitig; jeder Moment = ein full-frame Shot.
 - **Recherchierte Kniffe (Quellen Feb–Apr 2026):** narrative Logik zwischen den Panels ausschreiben; zeitcodierte Shot-Liste; Standard-Tier statt Fast/Turbo; Omni-Referenzen (bis 9 Bilder, Sheet als Anker + Charactersheets); „text overlay, no captions on screen“ (Text-Bleed); Aspect matchen (§17).
+- **Bestätigt (Babaji-Session, Juli 2026, seedance-2-mini/WaveSpeed):** Muster funktioniert auch auf dem Budget-Tier — 4–6 vertikale Panels als 12s-Sequenz mit sauberen Cuts, zeitcodierte Shot-List `0–3s Panel 1: …`, EINE Aktion + EINE Kamerabewegung pro Shot, Negative-Block am Ende.
 
 ## 16. Eine Identitätsfigur pro Charactersheet
 - **Problem:** zwei Figuren auf ein Sheet quetschen halbiert Fläche/Pixel pro Figur → schwächere Treue.
@@ -142,3 +144,10 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
   3. **Character-Sheet als @Image-Identity-Ref in JEDEM Video-Run mitgeben**, der die Figur enthält — auch wenn sie auf dem Anchor-Sheet korrekt aussieht. Bei Diagnose-Tests, die Refs reduzieren: Identity-Ref vor dem Produktiv-Run wieder einsetzen.
   4. Negativ-Merkmale explizit sperren, wenn Drift-Gefahr zu Archetypen besteht („no beard“ bei langhaarigen Weißgewand-Figuren gegen Jesus-Drift).
 - **Merksatz:** Verifizieren ist billiger als Re-Rendern — ein view-Call kostet nichts, ein 12s-Clip 2.88$.
+
+## 27. Frame-Level-Anschluss: End-Frame von Clip N = `primary` von Clip N+1 (verschärft §3)
+- **Problem (Babaji-Session, Juli 2026):** Die §3-Anschluss-Regel (gleiches Panel auf beiden Sheets) erzeugt nur *ähnliche* Bilder, keine identischen — die Frames driften von Clip zu Clip (Location-Details, Licht, Figuren-Position), der harte Schnitt springt sichtbar.
+- **Ursache:** zwei unabhängige Generierungen desselben Panel-Motivs (Sheet N Panel-letztes vs. Sheet N+1 Panel-erstes) sind zwei verschiedene Samples — Panel-Ähnlichkeit ≠ Frame-Identität.
+- **Lösung:** **echten letzten Frame** von Clip N per ffmpeg extrahieren (`ffmpeg -sseof -0.1 -i clipN.mp4 -frames:v 1 last.png`) und als **`primary` (literales Startbild)** von Clip N+1 setzen. Das Sheet bleibt @Image-Anchor für Look und Shot-Folge, aber die Übergabe läuft über den realen Frame. Frame muss sauber/textfrei sein (Start-/End-Frame-Regel).
+- **Konsequenz für den Workflow:** Sub-Clips einer Sequenz sind damit **seriell**, nicht parallel zu generieren — Clip N muss fertig sein, bevor N+1 startet (deckt sich mit §23 Keyframe-first: nie an ungerenderte Assets ankern).
+- **Anschluss-Panel auf dem Folge-Sheet trotzdem behalten** — es hält die Shot-Zählung der zeitcodierten Liste konsistent und gibt dem Modell die narrative Brücke.
