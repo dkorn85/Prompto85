@@ -12,6 +12,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 
 ## 2. Layout-Regel: 1×N statt Grid
 - Ein horizontaler Streifen (1×3, 1×4) ist robuster als ein Grid — gegen NSFW-Filter und für sauberen Schnitt. Dicke Trennränder, Figuren weit/klein.
+- *(Präzisiert in §29: Grid ist OK, solange die Panels ECHTE Zielformat-Proportionen behalten — die Falle ist das Vollflächen-Quetschen, nicht das Grid an sich.)*
 
 ## 3. 15-Sekunden-Grenze → Sub-Clips mit Anschluss
 - **Problem:** Storyboards über 15 s nicht in einem Clip generierbar (Modell-Limit).
@@ -62,6 +63,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Lösung:** **NULL Text / Zahlen / Captions / UI / Wasserzeichen in den Panels** (gilt für den NATIVE-Weg). Panel-Reihenfolge lebt nur in der Shot-Liste, nicht im Bild. Jede In-World-Beschriftung (Schilder, Notizen, Poster, Spind-Nummern) abgewandt, unscharf oder leer halten.
 - **Verschärft bei GPT Image 2:** ~99–100 % Textgenauigkeit heißt, es schreibt Schilder *zuverlässig* hin, wenn man es nicht hart unterbindet.
 - **Ausnahme:** auf dem CUT-Weg (§20) sind Panel-Captions erlaubt — sie werden vor dem Animieren weggecroppt.
+- **Ausnahme 2 (§29):** Gemini-basierte Video-Modelle (Omni Flash) LESEN Caption-Boxen außerhalb der Bildflächen als Regie-Anweisung, statt sie zu animieren — Regie-Sheet-Workflow.
 
 ## 14. Storyboard-Motor ist look-abhängig — nicht dogmatisch Nano
 - **Problem:** Doku-Annahme „Nano Banana Pro = Storyboard-König“ stimmt nicht universell.
@@ -84,7 +86,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem:** quadratische Panels in einem 9:16-Output → Seitencrop, breite Kompositionen verlieren Bildinhalt.
 - **Lösung:** Sheets in der Orientierung rendern, die die Shots erhält. Landscape → nativ 16:9. Ist 9:16 das Ziel, Panels gleich hochkant komponieren.
 - **Faustregel:** breit-cinematischer Doku-Look → 16:9; reines Short-Vertikal → vertikal anlegen.
-- **Ergänzung (Babaji-Session, Juli 2026):** funktionierendes Muster für 9:16-Clips — **16:9-Sheet-Canvas mit 4–6 hochkant komponierten 9:16-Panels nebeneinander**. Sheet-Format ≠ Panel-Format; entscheidend ist die Panel-Orientierung.
+- **Ergänzung (Babaji-Session, Juli 2026):** Sheet-Format ≠ Panel-Format; entscheidend ist die Panel-Proportion. *(Geometrie-Regel präzisiert in §29 — die „4–6 Panels nebeneinander in einer Reihe“-Variante war ein Fehler: erzeugt Streifen statt 9:16.)*
 
 ## 18. STILL-IMAGE-Regel (Panel = ein einzelnes Foto)
 - **Problem:** Panel-Beschreibungen mit Zeit-/Bewegungsverben lassen sich nicht als Einzelbild rendern — das Modell improvisiert oder verzerrt. Selbst passiert: „Dilo gives a calm nod“, „Tani notices / dawning understanding“, „Brandt glances back“.
@@ -105,6 +107,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
   - Video-Prompts: schlicht im **Präsens**, **kein** Kamera-Jargon, **keine** Panel-Querverweise („meanwhile/suddenly“), optional Dialog als `[Figur] says: "…"`, Endtag **„ambient only, no music, no subtitles“** (statt nur „No Music“ — unsere Audio-Policy §6).
   - Volle Shot-Kontrolle + Captions, kostet aber manuellen Schnitt.
 - **Wahl pro Projekt:** NATIVE für schnelle, anschlusssichere Sequenzen; CUT, wenn jeder Shot einzeln kontrolliert werden soll.
+- **Dritter Modus seit §29: DIRECTOR (Gemini Omni Flash)** — Regie-Sheet mit Caption-Boxen als einzige Quelle der Wahrheit, Minimal-Prompt.
 
 ## 21. Multi-Identitäts-Bleed in EINEM Frame (GPT Image 2)
 - **Problem:** Mehrere menschliche Identitäten in **einem** GPT-Image-2-Frame laufen ineinander — Figuren übernehmen gegenseitig Look/Gesicht. Selbst passiert (T2, „Tanz des Lebens“): erst war **Dilo doppelt** im Bild; nach Korrektur sah der **Gegner aus wie Dilo** und **Lumi (ein Lichtwesen!) wie Tani**.
@@ -134,6 +137,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Problem (Babaji-Session, Juli 2026):** seedance-2-mini via **runware** lehnte ein harmloses Multi-Figur-Storyboard-Sheet 4× in ~10 s als „ByteDance content moderation“ ab — Input-seitige Ablehnung. Getestet und ausgeschlossen: Prompt-Begriffe (religiös/ethnisch neutralisiert), Ref-Anzahl (1 vs. 2), nackte Oberkörper (bedeckte Sheet-Variante fiel identisch durch).
 - **Befund:** **dasselbe Sheet, derselbe Prompt via `provider: wavespeed` → läuft sauber durch** (12 s, 4 Shots, Audio, ~3,5 min Renderzeit). Die Ablehnung war runware-seitig, nicht ByteDance-modell-seitig und nicht unser Content (bestätigt §1: Gesichter-Cluster/Sheets triggern Filter, nicht Inhalt).
 - **Regel:** Seedance-Jobs mit Sheet-/Multi-Figur-Refs über Merkaba Honey **immer mit `provider: "wavespeed"` pinnen**. Diagnose-Signal: Ablehnung in <15 s = Input-Moderation → Provider wechseln, NICHT den Content umbauen. Kosten: wavespeed ~3× runware-Schätzung (2.88$ vs 0.97$ / 12 s 720p mit Refs), aber runware liefert schlicht nicht.
+- **Präzisierung (§29):** gilt Seedance-spezifisch — gemini-omni-flash lief via runware sauber durch, inkl. Sheet-Ref.
 - **Merksatz:** Erst Provider ausschließen, dann am Content schrauben. Abgelehnte Jobs kosten nichts (cost_actual = null) → Provider-Pin-Tests sind gratis.
 
 ## 26. Identity-Ref ist PFLICHT in jedem Video-Run + Panel-Verifikation vor Nutzung
@@ -143,6 +147,7 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
   2. **Identitäts-Panel vor Nutzung visuell verifizieren** (Panel croppen, gegen Referenz prüfen) — bei JEDER Sheet-Version neu, auch nach „kleinen“ Änderungen (Kleidungs-Variante = neue Version = neue Prüfung).
   3. **Character-Sheet als @Image-Identity-Ref in JEDEM Video-Run mitgeben**, der die Figur enthält — auch wenn sie auf dem Anchor-Sheet korrekt aussieht. Bei Diagnose-Tests, die Refs reduzieren: Identity-Ref vor dem Produktiv-Run wieder einsetzen.
   4. Negativ-Merkmale explizit sperren, wenn Drift-Gefahr zu Archetypen besteht („no beard“ bei langhaarigen Weißgewand-Figuren gegen Jesus-Drift).
+- **Zusatz-Befund (Clip D):** Video-Modelle driften Identität auch DANN, wenn Sheet + Identity-Ref korrekt mitgegeben wurden — die Frame-Verifikation nach dem Render (§28-Logik auf Clips angewandt) bleibt Pflicht, Identitäts-Urteile konservativ fällen und beim User rückversichern.
 - **Merksatz:** Verifizieren ist billiger als Re-Rendern — ein view-Call kostet nichts, ein 12s-Clip 2.88$.
 
 ## 27. Frame-Level-Anschluss: End-Frame von Clip N = `primary` von Clip N+1 (verschärft §3)
@@ -151,16 +156,24 @@ Jeder Punkt: *Problem → Ursache → Lösung*. Grundlage für die Guardrails im
 - **Lösung:** **echten letzten Frame** von Clip N per ffmpeg extrahieren (`ffmpeg -sseof -0.1 -i clipN.mp4 -frames:v 1 last.png`) und als **`primary` (literales Startbild)** von Clip N+1 setzen. Das Sheet bleibt @Image-Anchor für Look und Shot-Folge, aber die Übergabe läuft über den realen Frame. Frame muss sauber/textfrei sein (Start-/End-Frame-Regel).
 - **Konsequenz für den Workflow:** Sub-Clips einer Sequenz sind damit **seriell**, nicht parallel zu generieren — Clip N muss fertig sein, bevor N+1 startet (deckt sich mit §23 Keyframe-first: nie an ungerenderte Assets ankern).
 - **Anschluss-Panel auf dem Folge-Sheet trotzdem behalten** — es hält die Shot-Zählung der zeitcodierten Liste konsistent und gibt dem Modell die narrative Brücke.
+- **Bewährt (Clip D):** End-Frame von Clip C als `primary` → Schnitt C→D springt nicht mehr.
 
 ## 28. Sheet-QA-Checkliste vor jedem Video-Run (Gate, kein Vorschlag)
 - **Problem (Babaji-Session, Juli 2026):** Ein Sheet passierte die „Prüfung“ (textfrei ✓, Panel-Anzahl ✓) und war trotzdem Storyboard-Schrott: Anker-Panel zeigte nur angeschnittene Hände + Trommel statt des Vorgänger-Panels, Musiker **posierten frontal mit Kamera-Blick** (Band-Portrait statt Spielmoment), Framing sprang regellos zwischen Close/Medium/Ganzkörper. Die QA hatte nur Formalien geprüft, nicht Storyboard-Qualität.
 - **Ursache:** Prompt beschrieb Panels nur grob statt das PANEL-Schema (beat/subject/shot/light) durchzudeklinieren — und die Prüfung checkte nicht gegen das Schema.
 - **QA-Gate — JEDES Sheet vor JEDEM Video-Run, alle Punkte PFLICHT:**
-  1. **Textfrei** — keine Glyphe irgendwo (§13).
-  2. **Panel-Anzahl + Orientierung** wie geplant (§17).
+  1. **Textfrei in den Bildflächen** — keine Glyphe (§13; Caption-Boxen außerhalb der Frames nur im DIRECTOR-Modus §29).
+  2. **Panel-Anzahl + GEOMETRIE:** Panel-Proportion messen (Pixel!), nicht nur Orientierung raten (§29).
   3. **Anker-Match:** Panel 1 visuell gegen das Vorgänger-Panel/den End-Frame halten — gleiche Shot-Größe, gleiche Figuren, gleiche Location-Details. „Gleiches Motiv“ reicht nicht.
   4. **Beat-Check pro Panel:** jeder Beat als *Spielmoment* eingefroren („mid-strike“, „mid-breath“), NICHT als Pose/Aufstellung/Gruppenfoto (§18 verschärft: Posieren ist der getarnte Verstoß).
   5. **Kein Kamera-Blick:** niemand schaut in die Linse — im Sheet-Prompt explizit „candid in-scene moment, no eye contact with camera“ setzen, sonst animiert Seedance Kamera-Starrer.
   6. **Konsistente Shot-Grammatik:** Shot-Größe pro Panel bewusst gesetzt (aus dem PANEL-Schema), keine zufälligen Sprünge.
   7. **Identitäts-Panels** gegen Character-Referenz (§26).
 - **Regel:** Fällt EIN Punkt durch → Sheet neu generieren (0,15 $), NICHT „wird schon gehen“ (2,88 $ + Re-Roll). Das Gate gilt auch bei Zeitdruck und auch für „kleine“ Sheet-Revisionen.
+
+## 29. Gemini Omni Flash: DIRECTOR-Modus, Grid-Geometrie & Prompt-Regeln (Babaji-Session, Juli 2026)
+- **Modell-Steckbrief (Merkaba Honey `gemini-omni-flash`):** [i2v+t2v+ref2v], 720p mit synchronem Audio, 3–10 s, bis 10 Bild-Refs (~3 = Sweet Spot), ~0.13 $/s OHNE Ref-Aufschlag (10 s mit 2 Refs = 1.01 $ real vs. 2.88 $ Seedance-mini 12 s), Renderzeit ~1 min. Läuft via **runware sauber** (§25 ist Seedance-spezifisch). Strikter Google-Filter: **nur positive Verben** (kein Negative-Block — Verneinungen sind Rauschen), keine Waffen-Verben auf Personen, **keine Haut-Close-ups** (Medium/Wide für Figuren mit freiem Oberkörper).
+- **Grid-Geometrie (korrigiert die „eine Reihe“-Falle):** Panels müssen die Canvas NICHT füllen. **2 Reihen × 3 echte 9:16-Frames mit Rändern/Gutter auf 16:9-Canvas** — 4–6 Panels in EINER Reihe quetscht sie zu 1:2.8-Streifen, das Modell muss ~35 % Bildbreite erfinden (befeuert Identity-Drift). Lesereihenfolge „left to right, top row first“ funktioniert. 4K-Canvas für Pixel-Dichte pro Panel.
+- **DIRECTOR-Modus (dritter Pipeline-Modus neben NATIVE/CUT):** Regie-Sheet mit **Caption-Boxen UNTER jedem Frame** (3 Monospace-Zeilen: `NN · EXT. ORT — TAGESZEIT` / `ACTION: …` / `CAM: …`), Bildflächen selbst textfrei. **Omni Flash liest die Anweisungen multimodal aus dem Sheet** und setzt sie um — Minimal-Prompt genügt („Execute the six captioned shots in reading order, following each ACTION and CAM instruction“), das Sheet ist die einzige Quelle der Wahrheit. Bestätigt: „1a generiert, keine Flags“. Sheet-Motor: nano-banana-pro 4K (Text-Lesbarkeit), wörtlichen Caption-Text im Sheet-Prompt in Anführungszeichen. §13 gilt unverändert für Seedance & Co. — DIRECTOR ist Gemini-exklusiv bis anderweitig getestet.
+- **Einsatz-Faustregel:** Omni Flash = Preis-Leistungs-Arbeitspferd für Montage-Sequenzen (viele kurze Beats, ≤10 s) und DIRECTOR-Workflow; Seedance-2-mini/pro für Charakter-Nahaufnahmen, längere Einzelshots und >10 s.
+- **Plattform-Notiz:** interne Output-Moderation kann Assets als `rejected` flaggen (Menschenmengen/In-Image-Text als mögliche Trigger), Generierung + Abrechnung laufen trotzdem, Signed-URL bleibt gültig — Flag ggf. im Admin reviewen; Provider-seitig war derselbe Sheet-Input flag-frei.
